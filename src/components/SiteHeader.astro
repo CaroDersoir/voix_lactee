@@ -1,25 +1,27 @@
 ---
 const base = import.meta.env.BASE_URL.endsWith('/')
-  ? import.meta.env.BASE_URL
-  : import.meta.env.BASE_URL + '/';
+	? import.meta.env.BASE_URL
+	: import.meta.env.BASE_URL + '/';
+
+const toBaseHref = (path = '') => `${base}${path}`.replace(/([^:]\/)\/+/g, '$1');
 
 const links = [
-    { href: '', label: 'Accueil' },
-    { href: 'repertoire', label: 'Répertoire' },
-    { href: 'agenda', label: 'Agenda' },
-    { href: 'contact', label: 'Contact' }
+	{ href: '', label: 'Accueil' },
+	{ href: 'repertoire', label: 'Répertoire' },
+	{ href: 'agenda', label: 'Agenda' },
+	{ href: 'contact', label: 'Contact' }
 ];
 ---
 
 <header class="border-b border-stone-200 bg-white/90 backdrop-blur">
 	<div class="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
-		<a href="/" class="text-lg font-semibold tracking-wide text-emerald-900">Voix Lactee</a>
+		<a href={toBaseHref()} class="text-lg font-semibold tracking-wide text-emerald-900">Voix Lactee</a>
 		<nav aria-label="Navigation principale">
 			<ul class="flex items-center gap-1 text-sm font-medium text-stone-600">
 				{
 					links.map((link) => (
 						<li>
-							<a class="rounded-md px-3 py-2 transition hover:bg-emerald-50 hover:text-emerald-900" href={link.href}>
+							<a class="rounded-md px-3 py-2 transition hover:bg-emerald-50 hover:text-emerald-900" href={toBaseHref(link.href)}>
 								{link.label}
 							</a>
 						</li>
