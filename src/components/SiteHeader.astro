@@ -1,9 +1,11 @@
 ---
+const base = import.meta.env.BASE_URL;
+
 const links = [
-	{ href: '/', label: 'Accueil' },
-	{ href: '/repertoire', label: 'Repertoire' },
-	{ href: '/agenda', label: 'Agenda' },
-	{ href: '/contact', label: 'Contact' }
+    { href: base, label: 'Accueil' },
+    { href: `${base}repertoire`, label: 'Répertoire' },
+    { href: `${base}agenda`, label: 'Agenda' },
+    { href: `${base}contact`, label: 'Contact' }
 ];
 ---
 
