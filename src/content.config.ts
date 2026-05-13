@@ -1,0 +1,24 @@
+import { defineCollection, z } from 'astro:content';
+
+const songs = defineCollection({
+	type: 'content',
+	schema: z.object({
+		title: z.string(),
+		key: z.string(),
+		occasion: z.string(),
+		pdf: z.string().optional()
+	})
+});
+
+const events = defineCollection({
+	type: 'content',
+	schema: z.object({
+		title: z.string(),
+		date: z.coerce.date(),
+		time: z.string(),
+		location: z.string(),
+		description: z.string()
+	})
+});
+
+export const collections = { songs, events };

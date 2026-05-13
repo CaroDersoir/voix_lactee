@@ -1,0 +1,37 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../layouts/Layout.astro';
+import SectionTitle from '../components/SectionTitle.astro';
+
+const songs = await getCollection('songs');
+---
+
+<Layout title="Repertoire | Voix Lactee">
+	<SectionTitle title="Repertoire" subtitle="Chants utilises pendant les celebrations liturgiques." />
+	<div class="overflow-x-auto rounded-xl border border-stone-200 bg-white shadow-sm">
+		<table class="min-w-full divide-y divide-stone-200 text-left">
+			<thead class="bg-stone-100 text-sm uppercase tracking-wide text-stone-600">
+				<tr>
+					<th class="px-4 py-3 font-medium">Titre</th>
+					<th class="px-4 py-3 font-medium">Tonalite</th>
+					<th class="px-4 py-3 font-medium">Occasion</th>
+					<th class="px-4 py-3 font-medium">Partition</th>
+				</tr>
+			</thead>
+			<tbody class="divide-y divide-stone-100 text-sm text-stone-700">
+				{
+					songs.map((song) => (
+						<tr>
+							<td class="px-4 py-3 font-medium text-stone-900">{song.data.title}</td>
+							<td class="px-4 py-3">{song.data.key}</td>
+							<td class="px-4 py-3">{song.data.occasion}</td>
+							<td class="px-4 py-3">
+								{song.data.pdf ? <a class="text-emerald-800 underline" href={song.data.pdf}>Voir PDF</a> : 'Non renseigne'}
+							</td>
+						</tr>
+					))
+				}
+			</tbody>
+		</table>
+	</div>
+</Layout>
