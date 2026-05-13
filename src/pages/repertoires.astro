@@ -26,7 +26,13 @@ const songs = await getCollection('songs');
 							<td class="px-4 py-3">{song.data.key}</td>
 							<td class="px-4 py-3">{song.data.occasion}</td>
 							<td class="px-4 py-3">
-								{song.data.pdf ? <a class="text-emerald-800 underline" href={song.data.pdf}>Voir PDF</a> : 'Non renseigne'}
+								{song.data.pdf ? (
+									<a class="text-emerald-800 underline" href={`${import.meta.env.BASE_URL}${song.data.pdf.replace(/^\/+/, '')}`}>
+										Voir PDF
+									</a>
+								) : (
+									'Non renseigne'
+								)}
 							</td>
 						</tr>
 					))

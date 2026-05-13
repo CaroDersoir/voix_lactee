@@ -1,12 +1,12 @@
 // @ts-check
-import { defineConfig } from 'astro/config';
+import {defineConfig} from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
 
 // https://astro.build/config
 export default defineConfig({
-	site: 'https://CaroDersoir.github.io',
-	base: process.env.NODE_ENV === 'production' ? '/voix-lactee' : '/',
-	vite: {
-		plugins: [tailwindcss()]
-	}
+    site: 'https://CaroDersoir.github.io',
+    base: process.env.NODE_ENV === 'production' ? '/voix_lactee' : '/',
+    vite: {
+        plugins: [tailwindcss()]
+    }
 });

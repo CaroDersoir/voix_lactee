@@ -23,7 +23,7 @@ collections:
       - { label: "Titre", name: "title", widget: "string" }
       - { label: "Tonalite", name: "key", widget: "string" }
       - { label: "Occasion liturgique", name: "occasion", widget: "string" }
-      - { label: "Partition PDF", name: "pdf", widget: "string", required: false, hint: "Exemple: /uploads/mon-chant.pdf" }
+      - { label: "Partition PDF", name: "pdf", widget: "string", required: false, hint: "Exemple: uploads/mon-chant.pdf" }
       - { label: "Notes", name: "body", widget: "markdown", required: false }
 
   - name: "events"
