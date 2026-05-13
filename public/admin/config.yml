@@ -1,12 +1,12 @@
 backend:
   name: github
-  repo: votre-utilisateur/voix_lactee
+  repo: CaroDersoir/voix_lactee
   branch: main
 
 local_backend: true
 locale: "fr"
-site_url: "https://votre-utilisateur.github.io/voix_lactee"
-display_url: "https://votre-utilisateur.github.io/voix_lactee"
+site_url: "https://carodersoir.github.io/voix_lactee"
+display_url: "https://carodersoir.github.io/voix_lactee"
 
 media_folder: "public/uploads"
 public_folder: "/uploads"
