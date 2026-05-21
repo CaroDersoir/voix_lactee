@@ -1,6 +1,7 @@
 ---
 import '../../styles/global.css';
 const GH_TOKEN = import.meta.env.GH_TOKEN ?? '';
+const NETLIFY_BUILD_HOOK = import.meta.env.NETLIFY_BUILD_HOOK ?? '';
 ---
 <!doctype html>
 <html lang="fr">
@@ -157,8 +158,9 @@ const GH_TOKEN = import.meta.env.GH_TOKEN ?? '';
   </main>
 </div>
 
-<script is:inline define:vars={{ GH_TOKEN }}>
+<script is:inline define:vars={{ GH_TOKEN, NETLIFY_BUILD_HOOK }}>
 const OWNER  = 'CaroDersoir';
+async function triggerRebuild() { if (NETLIFY_BUILD_HOOK) fetch(NETLIFY_BUILD_HOOK, { method: 'POST' }); }
 const REPO   = 'voix_lactee';
 const BRANCH = 'main';
 const TOKEN  = GH_TOKEN;
@@ -309,7 +311,7 @@ async function loadSongs() {
     btn.addEventListener('click', async () => {
       if (!confirm(`Supprimer définitivement "${btn.dataset.name}" ?`)) return;
       btn.textContent = '…'; btn.disabled = true;
-      if (await ghDelete(btn.dataset.path, btn.dataset.sha, `suppr: ${btn.dataset.name}`)) loadSongs();
+      if (await ghDelete(btn.dataset.path, btn.dataset.sha, `suppr: ${btn.dataset.name}`)) { loadSongs(); triggerRebuild(); }
       else { btn.textContent = 'Erreur'; btn.disabled = false; }
     });
   });
@@ -332,7 +334,7 @@ document.getElementById('form-add-song').addEventListener('submit', async e => {
     }
     const md = ['---', `title: ${yamlStr(title)}`, key ? `key: ${yamlStr(key)}` : null, `occasion: ${yamlStr(occasion)}`, pdfPath ? `pdf: ${pdfPath}` : null, '---', ''].filter(l => l !== null).join('\n');
     await ghPut(`src/content/songs/${slugify(title)}.md`, b64encode(md), `ajout chant: ${title}`);
-    setStatus('song-status', 'ok', '✓ Ajouté. Mise à jour du site dans ~2 min.'); e.target.reset(); loadSongs();
+    setStatus('song-status', 'ok', '✓ Ajouté. Mise à jour du site dans ~2 min.'); e.target.reset(); loadSongs(); triggerRebuild();
   } catch(err) { setStatus('song-status', 'error', 'Erreur : ' + err.message); }
 });
 
@@ -365,7 +367,7 @@ async function loadEvents() {
     btn.addEventListener('click', async () => {
       if (!confirm(`Supprimer définitivement "${btn.dataset.name}" ?`)) return;
       btn.textContent = '…'; btn.disabled = true;
-      if (await ghDelete(btn.dataset.path, btn.dataset.sha, `suppr: ${btn.dataset.name}`)) loadEvents();
+      if (await ghDelete(btn.dataset.path, btn.dataset.sha, `suppr: ${btn.dataset.name}`)) { loadEvents(); triggerRebuild(); }
       else { btn.textContent = 'Erreur'; btn.disabled = false; }
     });
   });
@@ -382,7 +384,7 @@ document.getElementById('form-add-event').addEventListener('submit', async e => 
   try {
     const md = ['---', `title: ${yamlStr(title)}`, `date: ${date}`, `time: "${time}"`, `location: ${yamlStr(loc)}`, `description: ${yamlStr(desc)}`, '---', ''].join('\n');
     await ghPut(`src/content/events/${date}-${slugify(title)}.md`, b64encode(md), `ajout événement: ${title}`);
-    setStatus('evt-status', 'ok', '✓ Ajouté. Mise à jour du site dans ~2 min.'); e.target.reset(); loadEvents();
+    setStatus('evt-status', 'ok', '✓ Ajouté. Mise à jour du site dans ~2 min.'); e.target.reset(); loadEvents(); triggerRebuild();
   } catch(err) { setStatus('evt-status', 'error', 'Erreur : ' + err.message); }
 });
 </script>
