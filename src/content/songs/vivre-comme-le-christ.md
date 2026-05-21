@@ -1,5 +1,5 @@
 ---
 title: Vivre comme le christ
-occasion: Entrée
+occasion: Accueil
 pdf: uploads/vivre-comme-le-christ.pdf
 ---
