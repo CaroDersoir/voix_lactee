@@ -2,6 +2,11 @@
 import '../../styles/global.css';
 const GH_TOKEN = import.meta.env.GH_TOKEN ?? '';
 const NETLIFY_BUILD_HOOK = import.meta.env.NETLIFY_BUILD_HOOK ?? '';
+const base = import.meta.env.DEV
+  ? '/'
+  : import.meta.env.BASE_URL.endsWith('/')
+    ? import.meta.env.BASE_URL
+    : import.meta.env.BASE_URL + '/';
 ---
 <!doctype html>
 <html lang="fr">
@@ -40,7 +45,16 @@ const NETLIFY_BUILD_HOOK = import.meta.env.NETLIFY_BUILD_HOOK ?? '';
 
   <header class="border-b border-stone-200 bg-white px-6 py-4 flex items-center justify-between shadow-sm">
     <h1 class="text-base font-semibold text-blue-950">Administration — Voix Lactée</h1>
-    <button id="btn-logout" class="text-sm text-stone-400 hover:text-stone-700 transition-colors">Déconnexion</button>
+    <div class="flex items-center gap-4">
+      <a id="btn-back-site" href={base}
+        class="inline-flex items-center gap-1.5 text-sm text-stone-400 hover:text-blue-800 transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
+        </svg>
+        Retour au site
+      </a>
+      <button id="btn-logout" class="text-sm text-stone-400 hover:text-stone-700 transition-colors">Déconnexion</button>
+    </div>
   </header>
 
   <div class="border-b border-stone-200 bg-white px-6">
@@ -75,9 +89,11 @@ const NETLIFY_BUILD_HOOK = import.meta.env.NETLIFY_BUILD_HOOK ?? '';
             </div>
           </div>
           <div>
-            <label class="mb-1 block text-sm font-medium text-stone-700">Occasion / Type <span class="text-red-500">*</span></label>
-            <input id="song-occasion" type="text" required placeholder="Ex. : Entrée, Communion, Psaume…"
-              class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
+            <label class="mb-1 block text-sm font-medium text-stone-700">Type de chant <span class="text-red-500">*</span></label>
+            <select id="song-occasion" required
+              class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700">
+              <option value="">-- Choisir --</option>
+            </select>
           </div>
           <div>
             <label class="mb-1 block text-sm font-medium text-stone-700">Partition (PDF)</label>
@@ -158,6 +174,59 @@ const NETLIFY_BUILD_HOOK = import.meta.env.NETLIFY_BUILD_HOOK ?? '';
   </main>
 </div>
 
+<!-- ── Modale : modifier un chant ── -->
+<div id="modal-edit-song" class="fixed inset-0 z-50 items-center justify-center bg-black/50 p-4" style="display:none;">
+  <div class="w-full max-w-lg rounded-xl bg-white shadow-xl">
+    <div class="flex items-center justify-between border-b border-stone-200 px-6 py-4">
+      <h2 class="text-base font-semibold text-blue-950">Modifier le chant</h2>
+      <button id="btn-close-edit-modal" class="rounded-full p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-900 transition-colors" aria-label="Fermer">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+      </button>
+    </div>
+    <div class="px-6 py-5">
+      <form id="form-edit-song" class="space-y-4">
+        <input type="hidden" id="edit-path" />
+        <input type="hidden" id="edit-sha" />
+        <input type="hidden" id="edit-body-content" />
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-stone-700">Titre <span class="text-red-500">*</span></label>
+            <input id="edit-title" type="text" required
+              class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-stone-700">Tonalité</label>
+            <input id="edit-key" type="text" placeholder="Ex. : Ré majeur"
+              class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
+          </div>
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-stone-700">Type de chant <span class="text-red-500">*</span></label>
+          <select id="edit-occasion" required
+            class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700">
+            <option value="">-- Choisir --</option>
+          </select>
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-stone-700">Remplacer la partition (PDF)</label>
+          <p id="edit-current-pdf" class="mb-1 text-xs text-stone-400"></p>
+          <input id="edit-pdf" type="file" accept=".pdf"
+            class="w-full rounded-lg border border-stone-200 px-3 py-1.5 text-sm text-stone-600 file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-blue-50 file:px-3 file:py-1 file:text-sm file:font-medium file:text-blue-800 hover:file:bg-blue-100" />
+        </div>
+        <div id="edit-status" class="hidden rounded-lg px-3 py-2 text-sm"></div>
+      </form>
+    </div>
+    <div class="flex justify-end gap-3 border-t border-stone-200 px-6 py-4">
+      <button type="button" id="btn-cancel-edit"
+        class="rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50 transition-colors">Annuler</button>
+      <button type="submit" form="form-edit-song"
+        class="rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 transition-colors">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <script is:inline define:vars={{ GH_TOKEN, NETLIFY_BUILD_HOOK }}>
 const OWNER  = 'CaroDersoir';
 async function triggerRebuild() { if (NETLIFY_BUILD_HOOK) fetch(NETLIFY_BUILD_HOOK, { method: 'POST' }); }
@@ -166,6 +235,13 @@ const BRANCH = 'main';
 const TOKEN  = GH_TOKEN;
 const CREDS  = { user: 'admin', pass: 'jcroispasnon' };
 const SESSION_KEY = 'vl_admin_ok';
+const OCCASION_OPTIONS = ['Accueil','Kyrie','Gloria','Psaume','Alléluia','Prière universelle','Offertoire','Sanctus','Agnus Dei','Communion','Action de grâce','Envoi','En plus','Autre'];
+
+function buildOccasionSelect(selectEl, current) {
+  selectEl.innerHTML = '<option value="">-- Choisir --</option>' +
+    OCCASION_OPTIONS.map(o => `<option${o === current ? ' selected' : ''}>${o}</option>`).join('');
+}
+buildOccasionSelect(document.getElementById('song-occasion'), '');
 
 function b64decode(str) {
   const binary = atob(str.replace(/\n/g, ''));
@@ -266,10 +342,13 @@ async function loadSongs() {
   const songs = await Promise.all(files.map(async f => {
     const d = await ghGet(`contents/${f.path}`);
     const md = b64decode(d.content);
+    const bodyParts = md.split(/^---\s*$/m);
     return { path: f.path, sha: d.sha,
       title: md.match(/^title:\s*(.+)$/m)?.[1]?.trim().replace(/^"|"$/g, '') || f.name,
       key: md.match(/^key:\s*(.+)$/m)?.[1]?.trim() || '',
-      occasion: md.match(/^occasion:\s*(.+)$/m)?.[1]?.trim() || '' };
+      occasion: md.match(/^occasion:\s*(.+)$/m)?.[1]?.trim() || '',
+      pdf: md.match(/^pdf:\s*(.+)$/m)?.[1]?.trim() || '',
+      bodyContent: bodyParts.length >= 3 ? bodyParts.slice(2).join('---').trim() : '' };
   }));
   songs.sort((a, b) => a.title.localeCompare(b.title, 'fr'));
   adminSongsCache = songs;
@@ -303,9 +382,17 @@ async function loadSongs() {
         ${s.key ? `<span class="text-xs text-stone-400">${s.key}</span>` : ''}
         ${s.occasion ? `<span class="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-500">${s.occasion}</span>` : ''}
       </div>
-      <button data-path="${s.path}" data-sha="${s.sha}" data-name="${s.title}"
-        class="btn-del-song ml-4 flex-shrink-0 text-xs font-medium text-red-400 hover:text-red-600">Supprimer</button>
+      <div class="ml-4 flex flex-shrink-0 items-center gap-3">
+        <button data-idx="${songs.indexOf(s)}"
+          class="btn-mod-song text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors">Modifier</button>
+        <button data-path="${s.path}" data-sha="${s.sha}" data-name="${s.title}"
+          class="btn-del-song text-xs font-medium text-red-400 hover:text-red-600 transition-colors">Supprimer</button>
+      </div>
     </div>`).join('') : '<p class="px-6 py-5 text-stone-400 italic">Aucun chant.</p>';
+
+  list.querySelectorAll('.btn-mod-song').forEach(btn => {
+    btn.addEventListener('click', () => openEditModal(adminSongsCache[parseInt(btn.dataset.idx)]));
+  });
 
   list.querySelectorAll('.btn-del-song').forEach(btn => {
     btn.addEventListener('click', async () => {
@@ -336,6 +423,59 @@ document.getElementById('form-add-song').addEventListener('submit', async e => {
     await ghPut(`src/content/songs/${slugify(title)}.md`, b64encode(md), `ajout chant: ${title}`);
     setStatus('song-status', 'ok', '✓ Ajouté. Mise à jour du site dans ~2 min.'); e.target.reset(); loadSongs(); triggerRebuild();
   } catch(err) { setStatus('song-status', 'error', 'Erreur : ' + err.message); }
+});
+
+// ── Modale édition chant ───────────────────────────────────
+const editModal = document.getElementById('modal-edit-song');
+let currentEditSong = null;
+
+function openEditModal(song) {
+  currentEditSong = song;
+  document.getElementById('edit-path').value = song.path;
+  document.getElementById('edit-sha').value = song.sha;
+  document.getElementById('edit-body-content').value = song.bodyContent || '';
+  document.getElementById('edit-title').value = song.title;
+  document.getElementById('edit-key').value = song.key;
+  buildOccasionSelect(document.getElementById('edit-occasion'), song.occasion);
+  document.getElementById('edit-current-pdf').textContent =
+    song.pdf ? `Partition actuelle : ${song.pdf.split('/').pop()}` : 'Aucune partition enregistrée.';
+  document.getElementById('edit-pdf').value = '';
+  document.getElementById('edit-status').classList.add('hidden');
+  editModal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeEditModal() {
+  editModal.style.display = 'none';
+  document.body.style.overflow = '';
+}
+document.getElementById('btn-close-edit-modal').addEventListener('click', closeEditModal);
+document.getElementById('btn-cancel-edit').addEventListener('click', closeEditModal);
+editModal.addEventListener('click', e => { if (e.target === editModal) closeEditModal(); });
+
+document.getElementById('form-edit-song').addEventListener('submit', async e => {
+  e.preventDefault();
+  const path        = document.getElementById('edit-path').value;
+  const sha         = document.getElementById('edit-sha').value;
+  const title       = document.getElementById('edit-title').value.trim();
+  const key         = document.getElementById('edit-key').value.trim();
+  const occasion    = document.getElementById('edit-occasion').value;
+  const pdfFile     = document.getElementById('edit-pdf').files[0];
+  const bodyContent = document.getElementById('edit-body-content').value;
+  if (!title || !occasion) return;
+  setStatus('edit-status', 'loading', 'Enregistrement en cours…');
+  try {
+    let pdfPath = currentEditSong.pdf || '';
+    if (pdfFile) {
+      await ghPut(`public/uploads/${slugify(title)}.pdf`, await fileToBase64(pdfFile), `partition: ${title}`);
+      pdfPath = `uploads/${slugify(title)}.pdf`;
+    }
+    const md = ['---', `title: ${yamlStr(title)}`, key ? `key: ${yamlStr(key)}` : null,
+      `occasion: ${yamlStr(occasion)}`, pdfPath ? `pdf: ${pdfPath}` : null, '---',
+      bodyContent || ''].filter(l => l !== null).join('\n');
+    await ghPut(path, b64encode(md), `modif chant: ${title}`, sha);
+    setStatus('edit-status', 'ok', '✓ Modifié. Mise à jour dans ~2 min.');
+    setTimeout(() => { closeEditModal(); loadSongs(); triggerRebuild(); }, 1200);
+  } catch(err) { setStatus('edit-status', 'error', 'Erreur : ' + err.message); }
 });
 
 // Événements
