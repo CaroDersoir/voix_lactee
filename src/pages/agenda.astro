@@ -53,11 +53,11 @@ const upcomingEvents = events
 	)}
 	</div>
 
-	<script type="application/json" id="songs-map" set:text={JSON.stringify(songsByPdf)}></script>
+	<div id="songs-data" data-map={JSON.stringify(songsByPdf)} hidden></div>
 
 	<!-- Modale détail + inscription -->
 	<div id="modal-detail" class="fixed inset-0 z-50 items-center justify-center bg-black/50 p-4" style="display:none;">
-		<div class="relative w-full max-w-lg rounded-xl bg-white shadow-xl" style="max-height:90vh;">
+		<div class="relative w-full max-w-2xl rounded-xl bg-white shadow-xl" style="max-height:90vh;">
 
 			<div class="flex items-center justify-between border-b border-stone-200 px-6 py-4">
 				<h2 id="detail-title" class="text-xl font-semibold text-blue-950"></h2>
@@ -147,7 +147,9 @@ const upcomingEvents = events
 		`).join('');
 	}
 
-	const songsMap: Record<string, string> = JSON.parse(document.getElementById('songs-map')!.textContent!);
+	const songsMap: Record<string, string> = JSON.parse(
+		(document.getElementById('songs-data') as HTMLElement)?.dataset.map || '{}'
+	);
 
 	const SLOT_LABELS: Record<string, string> = {
 		accueil: 'Accueil', kyrie: 'Kyrie', gloria: 'Gloria', psaume: 'Psaume',
@@ -177,8 +179,12 @@ const upcomingEvents = events
 				chef ? `<span>Chef·fe de chœur : <strong>${chef}</strong></span>` : '',
 				org  ? `<span>Organiste : <strong>${org}</strong></span>` : '',
 			].filter(Boolean).join('');
+			teamEl.classList.remove('hidden');
 			teamEl.style.display = 'flex';
-		} else { teamEl.style.display = 'none'; }
+		} else {
+			teamEl.classList.add('hidden');
+			teamEl.style.display = 'none';
+		}
 
 		// Programme
 		const progSection = document.getElementById('detail-program-section')!;
