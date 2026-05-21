@@ -617,9 +617,9 @@ document.getElementById('form-add-song').addEventListener('submit', async e => {
       { id: 'song-audio-t', field: 'audio_tenor',   suffix: '-tenor'   },
       { id: 'song-audio-b', field: 'audio_basse',   suffix: '-basse'   },
     ];
-    const audioPaths: Record<string, string> = {};
+    const audioPaths = {};
     for (const v of audioVoices) {
-      const file = (document.getElementById(v.id) as HTMLInputElement).files?.[0];
+      const file = document.getElementById(v.id).files?.[0];
       if (file) {
         const ext = file.name.split('.').pop() || 'mp3';
         await ghPut(`public/uploads/${slug}${v.suffix}.${ext}`, await fileToBase64(file), `ajout audio ${v.field}: ${title}`);

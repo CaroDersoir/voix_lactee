@@ -3,7 +3,10 @@ import { getCollection } from 'astro:content';
 import Layout from '../layouts/Layout.astro';
 import SectionTitle from '../components/SectionTitle.astro';
 
-const events = await getCollection('events');
+const events    = await getCollection('events');
+const allSongs  = await getCollection('songs');
+const songsByPdf: Record<string, string> = {};
+allSongs.forEach(s => { if (s.data.pdf) songsByPdf[s.data.pdf] = s.data.title; });
 const upcomingEvents = events
   .sort((a, b) => a.data.date.getTime() - b.data.date.getTime())
   .map(event => {
@@ -49,6 +52,8 @@ const upcomingEvents = events
 		<p class="text-sm italic text-stone-400">Aucun événement à venir.</p>
 	)}
 	</div>
+
+	<script type="application/json" id="songs-map" set:text={JSON.stringify(songsByPdf)}></script>
 
 	<!-- Modale détail + inscription -->
 	<div id="modal-detail" class="fixed inset-0 z-50 items-center justify-center bg-black/50 p-4" style="display:none;">
@@ -142,6 +147,8 @@ const upcomingEvents = events
 		`).join('');
 	}
 
+	const songsMap: Record<string, string> = JSON.parse(document.getElementById('songs-map')!.textContent!);
+
 	const SLOT_LABELS: Record<string, string> = {
 		accueil: 'Accueil', kyrie: 'Kyrie', gloria: 'Gloria', psaume: 'Psaume',
 		alleluia: 'Alléluia', priere_universelle: 'Prière universelle', offertoire: 'Offertoire',
@@ -180,13 +187,14 @@ const upcomingEvents = events
 		try { prog = JSON.parse(card.dataset.program || '{}'); } catch {}
 		const progEntries = Object.entries(prog).filter(([, v]) => v);
 		if (card.dataset.type === 'messe' && progEntries.length > 0) {
-			progEl.innerHTML = progEntries.map(([k, v]) =>
-				`<div class="flex items-center gap-1.5">
+			progEl.innerHTML = progEntries.map(([k, v]) => {
+				const songTitle = songsMap[v] || v.split('/').pop()?.replace(/\.pdf$/i, '') || '';
+				return `<div class="flex items-center gap-1.5">
 					<span class="w-32 flex-shrink-0 text-xs font-medium text-stone-500">${SLOT_LABELS[k] ?? k}</span>
-					<a href="/${v}" target="_blank" rel="noopener"
-						class="truncate text-xs text-blue-700 underline-offset-2 hover:underline">Partition</a>
-				</div>`
-			).join('');
+					<span class="truncate text-xs text-stone-800">${songTitle}</span>
+					${v ? `<a href="/${v}" target="_blank" rel="noopener" class="flex-shrink-0 text-xs text-blue-600 hover:underline" title="Voir la partition">PDF</a>` : ''}
+				</div>`;
+			}).join('');
 			progSection.style.display = 'block';
 		} else { progSection.style.display = 'none'; }
 
