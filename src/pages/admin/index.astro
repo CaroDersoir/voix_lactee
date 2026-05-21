@@ -183,7 +183,12 @@ function yamlStr(val) {
 
 const GH = { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json', Accept: 'application/vnd.github+json' };
 
-async function ghGet(path)                      { return fetch(`https://api.github.com/repos/${OWNER}/${REPO}/${path}`, { headers: GH }).then(r => r.json()); }
+async function ghGet(path) {
+  const r = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/${path}`, { headers: GH });
+  const data = await r.json();
+  if (!r.ok) console.error('GitHub API error', r.status, data.message, '| token present:', !!TOKEN);
+  return data;
+}
 async function ghPut(path, content, msg, sha)   {
   const body = { message: msg, content, branch: BRANCH };
   if (sha) body.sha = sha;
