@@ -5,7 +5,7 @@ const songs = defineCollection({
 	loader: glob({ pattern: '**/*.md', base: './src/content/songs' }),
 	schema: z.object({
 		title: z.string(),
-		key: z.string(),
+		key: z.string().optional(),
 		occasion: z.string(),
 		pdf: z.string().optional()
 	})
