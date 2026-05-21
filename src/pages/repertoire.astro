@@ -1,37 +1,64 @@
 ---
 import { getCollection } from 'astro:content';
 import Layout from '../layouts/Layout.astro';
-import SectionTitle from '../components/SectionTitle.astro';
 
-const songs = await getCollection('songs');
+const allSongs = await getCollection('songs');
+const songs = allSongs.sort((a, b) => a.data.title.localeCompare(b.data.title, 'fr', { sensitivity: 'base' }));
+const occasions = [...new Set(songs.map(s => s.data.occasion))].sort((a, b) => a.localeCompare(b, 'fr'));
 ---
 
-<Layout title="Repertoire | Voix Lactee">
-	<SectionTitle title="Repertoire" subtitle="Chants utilises pendant les celebrations liturgiques." />
+<Layout title="Répertoire | Voix Lactée">
+
+	<div class="mb-8">
+		<h1 class="text-3xl font-semibold tracking-tight text-blue-950 sm:text-4xl">Répertoire</h1>
+		<p class="mt-3 max-w-3xl text-stone-600">Chants utilisés pendant les célébrations liturgiques.</p>
+	</div>
+
+	<!-- Recherche + filtres -->
+	<div class="mb-4 flex flex-wrap items-center gap-3">
+		<input
+			id="search-input"
+			type="search"
+			placeholder="Rechercher un chant..."
+			class="flex-1 min-w-48 rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700"
+		/>
+		<div class="flex flex-wrap gap-2">
+			<button data-filter="" class="filter-btn rounded-full border border-blue-900 bg-blue-900 px-3 py-1 text-xs font-medium text-white transition-colors">
+				Tous
+			</button>
+			{occasions.map(occasion => (
+				<button data-filter={occasion} class="filter-btn rounded-full border border-stone-300 px-3 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-blue-900 hover:bg-blue-50 hover:text-blue-900">
+					{occasion}
+				</button>
+			))}
+		</div>
+	</div>
+
+	<!-- Tableau -->
 	<div class="overflow-x-auto rounded-xl border border-stone-200 bg-white shadow-sm">
 		<table class="min-w-full divide-y divide-stone-200 text-left">
 			<thead class="bg-stone-100 text-sm uppercase tracking-wide text-stone-600">
 				<tr>
 					<th class="px-4 py-3 font-medium">Titre</th>
-					<th class="px-4 py-3 font-medium">Tonalite</th>
+					<th class="px-4 py-3 font-medium">Tonalité</th>
 					<th class="px-4 py-3 font-medium">Occasion</th>
 					<th class="px-4 py-3 font-medium">Partition</th>
 				</tr>
 			</thead>
-			<tbody class="divide-y divide-stone-100 text-sm text-stone-700">
+			<tbody id="songs-tbody" class="divide-y divide-stone-100 text-sm text-stone-700">
 				{
 					songs.map((song) => (
-						<tr>
+						<tr data-title={song.data.title.toLowerCase()} data-occasion={song.data.occasion}>
 							<td class="px-4 py-3 font-medium text-stone-900">{song.data.title}</td>
 							<td class="px-4 py-3">{song.data.key}</td>
 							<td class="px-4 py-3">{song.data.occasion}</td>
 							<td class="px-4 py-3">
 								{song.data.pdf ? (
-									<a class="text-emerald-800 underline" href={`${import.meta.env.BASE_URL}${song.data.pdf.replace(/^\/+/, '')}`}>
+									<button class="pdf-btn text-blue-800 underline" data-url={`${import.meta.env.BASE_URL}${song.data.pdf.replace(/^\/+/, '')}`}>
 										Voir PDF
-									</a>
+									</button>
 								) : (
-									'Non renseigne'
+									'Non renseigné'
 								)}
 							</td>
 						</tr>
@@ -39,5 +66,88 @@ const songs = await getCollection('songs');
 				}
 			</tbody>
 		</table>
+		<p id="no-results" class="hidden py-8 text-center text-sm text-stone-400">Aucun chant trouvé.</p>
 	</div>
+
+	<!-- Visionneuse PDF -->
+	<div
+		id="pdf-overlay"
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3"
+		style="display: none;"
+	>
+		<div class="relative flex h-[95vh] w-[95vw] flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
+			<button
+				id="btn-close-pdf"
+				class="absolute right-4 top-4 z-10 flex items-center gap-2 rounded-lg bg-blue-900 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-blue-700"
+			>
+				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+					<path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+				</svg>
+				Fermer
+			</button>
+			<iframe id="pdf-frame" src="" class="h-full w-full border-0"></iframe>
+		</div>
+	</div>
+
 </Layout>
+
+<script>
+	// Recherche + filtre
+	const searchInput = document.getElementById('search-input') as HTMLInputElement;
+	const filterBtns = document.querySelectorAll<HTMLButtonElement>('.filter-btn');
+	const noResults = document.getElementById('no-results')!;
+	let activeFilter = '';
+
+	function applyFilters() {
+		const query = searchInput.value.toLowerCase().trim();
+		const rows = document.querySelectorAll<HTMLTableRowElement>('#songs-tbody tr');
+		let visible = 0;
+		rows.forEach(row => {
+			const titleMatch = (row.dataset.title || '').includes(query);
+			const filterMatch = !activeFilter || row.dataset.occasion === activeFilter;
+			const show = titleMatch && filterMatch;
+			row.style.display = show ? '' : 'none';
+			if (show) visible++;
+		});
+		noResults.classList.toggle('hidden', visible > 0);
+	}
+
+	searchInput.addEventListener('input', applyFilters);
+
+	filterBtns.forEach(btn => {
+		btn.addEventListener('click', () => {
+			activeFilter = btn.dataset.filter!;
+			filterBtns.forEach(b => {
+				const isActive = b === btn;
+				b.classList.toggle('bg-blue-900', isActive);
+				b.classList.toggle('text-white', isActive);
+				b.classList.toggle('border-blue-900', isActive);
+				b.classList.toggle('text-stone-600', !isActive);
+				b.classList.toggle('border-stone-300', !isActive);
+			});
+			applyFilters();
+		});
+	});
+
+	// Visionneuse PDF
+	const pdfOverlay = document.getElementById('pdf-overlay') as HTMLElement;
+	const pdfFrame   = document.getElementById('pdf-frame')   as HTMLIFrameElement;
+	const btnClosePdf = document.getElementById('btn-close-pdf') as HTMLElement;
+
+	document.querySelectorAll<HTMLButtonElement>('.pdf-btn').forEach(btn => {
+		btn.addEventListener('click', () => {
+			pdfFrame.src = btn.dataset.url!;
+			pdfOverlay.style.display = 'flex';
+			document.body.style.overflow = 'hidden';
+		});
+	});
+
+	btnClosePdf.addEventListener('click', closePdf);
+	pdfOverlay.addEventListener('click', (e) => { if (e.target === pdfOverlay) closePdf(); });
+
+	function closePdf() {
+		pdfOverlay.style.display = 'none';
+		pdfFrame.src = '';
+		document.body.style.overflow = '';
+	}
+</script>

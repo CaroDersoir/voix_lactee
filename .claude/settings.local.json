@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Copy-Item *)",
+      "PowerShell(New-Item *)",
+      "Bash(npx astro *)"
+    ]
+  }
+}

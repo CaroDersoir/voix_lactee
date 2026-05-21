@@ -7,19 +7,166 @@ const events = await getCollection('events');
 const upcomingEvents = events.sort((a, b) => a.data.date.getTime() - b.data.date.getTime());
 ---
 
-<Layout title="Agenda | Voix Lactee">
-	<SectionTitle title="Agenda" subtitle="Messes et evenements a venir." />
+<Layout title="Agenda | Voix Lactée">
+
+	<SectionTitle title="Agenda" subtitle="Messes et événements à venir." />
+
 	<div class="grid gap-4">
-		{
-			upcomingEvents.map((event) => (
-				<article class="rounded-xl border border-stone-200 bg-white p-5 shadow-sm">
-					<h2 class="text-lg font-semibold text-emerald-950">{event.data.title}</h2>
-					<p class="mt-2 text-sm text-stone-600">
-						{event.data.date.toLocaleDateString('fr-FR')} a {event.data.time} - {event.data.location}
-					</p>
-					<p class="mt-3 text-stone-700">{event.data.description}</p>
-				</article>
-			))
-		}
+		{upcomingEvents.map((event) => (
+			<article
+				class="event-card cursor-pointer rounded-xl border border-stone-200 bg-white p-5 shadow-sm transition hover:border-blue-300 hover:shadow-md"
+				data-id={event.id}
+				data-title={event.data.title}
+				data-date={event.data.date.toISOString().split('T')[0]}
+				data-time={event.data.time}
+				data-location={event.data.location}
+				data-description={event.data.description}
+			>
+				<h2 class="text-lg font-semibold text-blue-950">{event.data.title}</h2>
+				<p class="mt-2 text-sm text-stone-500">
+					{event.data.date.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} à {event.data.time} — {event.data.location}
+				</p>
+				{event.data.description && (
+					<p class="mt-3 text-sm text-stone-700">{event.data.description}</p>
+				)}
+			</article>
+		))}
+		{upcomingEvents.length === 0 && (
+			<p class="text-sm italic text-stone-400">Aucun événement à venir.</p>
+		)}
 	</div>
+
+	<!-- Modale détail + inscription -->
+	<div id="modal-detail" class="fixed inset-0 z-50 items-center justify-center bg-black/50 p-4" style="display:none;">
+		<div class="relative w-full max-w-lg rounded-xl bg-white shadow-xl" style="max-height:90vh;">
+
+			<div class="flex items-center justify-between border-b border-stone-200 px-6 py-4">
+				<h2 id="detail-title" class="text-xl font-semibold text-blue-950"></h2>
+				<button id="btn-close-detail" class="rounded-full p-1 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-900" aria-label="Fermer">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+						<path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+					</svg>
+				</button>
+			</div>
+
+			<div class="space-y-5 overflow-y-auto px-6 py-5" style="max-height:calc(90vh - 76px);">
+				<div>
+					<p id="detail-datetime" class="text-sm text-stone-500"></p>
+					<p id="detail-location" class="text-sm text-stone-500"></p>
+					<p id="detail-description" class="mt-3 text-stone-700"></p>
+				</div>
+
+				<div>
+					<h3 class="mb-3 border-b border-stone-100 pb-1 text-base font-semibold text-stone-800">Inscriptions</h3>
+					<div id="detail-signups-list" class="mb-4 space-y-2 text-sm"></div>
+					<div class="rounded-lg border border-stone-200 bg-stone-50 p-4">
+						<h4 class="mb-3 text-sm font-semibold text-stone-700">S'inscrire</h4>
+						<form id="form-signup" class="space-y-3">
+							<div>
+								<label class="mb-1 block text-xs font-medium text-stone-600">Nom <span class="text-red-500">*</span></label>
+								<input id="signup-name" type="text" required placeholder="Votre prénom et nom"
+									class="w-full rounded-lg border border-stone-300 px-3 py-1.5 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
+							</div>
+							<div>
+								<label class="mb-1 block text-xs font-medium text-stone-600">Instrument</label>
+								<input id="signup-instrument" type="text" placeholder="Ex. : guitare, piano, violon…"
+									class="w-full rounded-lg border border-stone-300 px-3 py-1.5 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
+							</div>
+							<div>
+								<p class="mb-1.5 text-xs font-medium text-stone-600">Pupitre vocal</p>
+								<div class="flex flex-wrap gap-5">
+									{['Soprano', 'Alto', 'Ténor', 'Basse'].map((v) => (
+										<label class="flex cursor-pointer items-center gap-1.5">
+											<input type="radio" name="signup-voice" value={v} class="accent-blue-700" />
+											<span class="text-sm text-stone-700">{v}</span>
+										</label>
+									))}
+								</div>
+							</div>
+							<button type="submit" class="w-full rounded-lg bg-blue-800 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700">
+								S'inscrire
+							</button>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
 </Layout>
+
+<script>
+	let currentDetailId: string | null = null;
+
+	function loadSignups(id: string): any[] { try { return JSON.parse(localStorage.getItem('vl_signups_' + id) || '[]'); } catch { return []; } }
+	function saveSignups(id: string, d: any[]) { localStorage.setItem('vl_signups_' + id, JSON.stringify(d)); }
+	function cap(s: string) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+
+	function fmtDate(str: string) {
+		return new Date(str + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+	}
+
+	function renderSignupsList(eventId: string) {
+		const signups = loadSignups(eventId);
+		const list = document.getElementById('detail-signups-list')!;
+		if (!signups.length) {
+			list.innerHTML = '<p class="text-sm italic text-stone-400">Aucune inscription pour le moment.</p>';
+			return;
+		}
+		list.innerHTML = signups.map((s: any) => `
+			<div class="flex items-center gap-2 rounded-lg border border-stone-100 bg-white px-3 py-2">
+				<span class="font-medium text-stone-800">${s.name}</span>
+				${s.voice ? `<span class="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">${cap(s.voice)}</span>` : ''}
+				${s.instrument ? `<span class="text-stone-400">—</span><span class="text-stone-600">${s.instrument}</span>` : ''}
+			</div>
+		`).join('');
+	}
+
+	function openDetail(card: HTMLElement) {
+		const id = card.dataset.id!;
+		currentDetailId = id;
+		document.getElementById('detail-title')!.textContent = card.dataset.title!;
+		document.getElementById('detail-datetime')!.textContent = `${fmtDate(card.dataset.date!)} à ${card.dataset.time}`;
+		document.getElementById('detail-location')!.textContent = card.dataset.location!;
+		const descEl = document.getElementById('detail-description')!;
+		descEl.textContent = card.dataset.description || '';
+		descEl.style.display = card.dataset.description ? 'block' : 'none';
+		renderSignupsList(id);
+		(document.getElementById('form-signup') as HTMLFormElement).reset();
+		document.getElementById('modal-detail')!.style.display = 'flex';
+		document.body.style.overflow = 'hidden';
+	}
+
+	function closeDetail() {
+		document.getElementById('modal-detail')!.style.display = 'none';
+		document.body.style.overflow = '';
+		currentDetailId = null;
+	}
+
+	document.querySelectorAll<HTMLElement>('.event-card').forEach(card => {
+		card.addEventListener('click', () => openDetail(card));
+	});
+
+	document.getElementById('btn-close-detail')!.addEventListener('click', closeDetail);
+	document.getElementById('modal-detail')!.addEventListener('click', e => {
+		if (e.target === document.getElementById('modal-detail')) closeDetail();
+	});
+
+	document.getElementById('form-signup')!.addEventListener('submit', e => {
+		e.preventDefault();
+		if (!currentDetailId) return;
+		const name = (document.getElementById('signup-name') as HTMLInputElement).value.trim();
+		if (!name) return;
+		const signup = {
+			id: Date.now().toString(),
+			name,
+			instrument: (document.getElementById('signup-instrument') as HTMLInputElement).value.trim(),
+			voice: (document.querySelector('input[name="signup-voice"]:checked') as HTMLInputElement | null)?.value || '',
+		};
+		const signups = loadSignups(currentDetailId);
+		signups.push(signup);
+		saveSignups(currentDetailId, signups);
+		renderSignupsList(currentDetailId);
+		(document.getElementById('form-signup') as HTMLFormElement).reset();
+	});
+</script>

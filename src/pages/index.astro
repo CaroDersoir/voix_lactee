@@ -1,26 +1,35 @@
 ---
-import SectionTitle from '../components/SectionTitle.astro';
+import { Image } from 'astro:assets';
 import Layout from '../layouts/Layout.astro';
+import logo from '../assets/logo_voix_lactee_wbg.png';
 ---
 
 <Layout title="Voix Lactee | Chorale catholique">
-	<SectionTitle
-		title="Voix Lactee"
-		subtitle="Chorale catholique au service de la liturgie, de la priere et de la beaute du chant sacre."
-	/>
-	<section class="grid gap-6 rounded-xl border border-stone-200 bg-white p-6 shadow-sm sm:grid-cols-2">
-		<div>
-			<h2 class="text-xl font-semibold text-emerald-950">Notre mission</h2>
-			<p class="mt-3 text-stone-700">
-				Nous animons les messes dominicales, les fetes liturgiques et les temps forts paroissiaux avec un
-				repertoire allant du gregorien au chant liturgique contemporain.
-			</p>
-		</div>
-		<div>
-			<h2 class="text-xl font-semibold text-emerald-950">Rejoindre la chorale</h2>
-			<p class="mt-3 text-stone-700">
-				Les repetitions ont lieu chaque jeudi soir. Tous les pupitres sont bienvenus, quel que soit le niveau.
-			</p>
-		</div>
-	</section>
+    <div class="mb-10 flex flex-col items-center text-center">
+        <Image src={logo} alt="Logo Voix Lactée" class="h-40 w-auto mb-4" />
+        <h1 class="text-4xl font-semibold tracking-tight text-blue-950">Voix Lactée</h1>
+        <p class="mt-3 max-w-xl text-stone-600">Chorale catholique au service de la liturgie, de la prière et de la beauté du chant sacré.</p>
+    </div>
+    <section class="grid gap-6 rounded-xl border border-stone-200 bg-white p-6 shadow-sm sm:grid-cols-2">
+        <div>
+            <h2 class="text-xl font-semibold text-blue-950">Notre mission</h2>
+            <p class="mt-3 text-stone-700">
+                Nous animons des messes dominicales, des fêtes liturgiques et des mariages, avec un
+                répertoire large et varié s'adaptant aux souhaits de chacun.
+            </p>
+        </div>
+        <div>
+            <h2 class="text-xl font-semibold text-blue-950">Rejoindre la chorale</h2>
+            <p class="mt-3 text-stone-700">
+                Les répétitions ont lieu chaque mercredi soir.
+            </p>
+            <p class="mt-3 text-stone-700">
+                A l'origine, le rendez-vous est à 18h45, mais en réalité cela dépend surtout des retards d'Enguerrand et
+                Guilhem... quand la cheffe de choeur s'est réveillée de sa sieste...
+            </p>
+            <p class="mt-3 text-stone-700">
+                Tous les pupitres sont bienvenus, quel que soit le niveau.
+            </p>
+        </div>
+    </section>
 </Layout>
