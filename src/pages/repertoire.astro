@@ -5,6 +5,8 @@ import Layout from '../layouts/Layout.astro';
 const allSongs = await getCollection('songs');
 const songs = allSongs.sort((a, b) => a.data.title.localeCompare(b.data.title, 'fr', { sensitivity: 'base' }));
 const occasions = [...new Set(songs.map(s => s.data.occasion))].sort((a, b) => a.localeCompare(b, 'fr'));
+const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : import.meta.env.BASE_URL + '/';
+const audioUrl = (path: string | undefined) => path ? `${base}${path.replace(/^\/+/, '')}` : '';
 ---
 
 <Layout title="Répertoire | Voix Lactée">
@@ -15,18 +17,12 @@ const occasions = [...new Set(songs.map(s => s.data.occasion))].sort((a, b) => a
 			<h1 class="text-3xl font-semibold tracking-tight text-blue-950 sm:text-4xl">Répertoire</h1>
 			<p class="mt-3 max-w-3xl text-stone-600">Chants utilisés pendant les célébrations liturgiques.</p>
 		</div>
-		<!-- Verrou admin -->
-		<button
-			id="btn-admin-toggle"
-			title="Mode administration"
+		<button id="btn-admin-toggle" title="Mode administration"
 			class="mt-1 rounded-full p-1.5 text-stone-300 transition-colors hover:bg-stone-100 hover:text-stone-500"
-			aria-pressed="false"
-		>
-			<!-- Icône cadenas fermé (mode normal) -->
+			aria-pressed="false">
 			<svg id="icon-locked" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
 				<path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
 			</svg>
-			<!-- Icône cadenas ouvert (mode admin) -->
 			<svg id="icon-unlocked" xmlns="http://www.w3.org/2000/svg" class="hidden h-5 w-5 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
 				<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5V6.75a4.5 4.5 0 119 0v3.75M3.75 21.75h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H3.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
 			</svg>
@@ -35,16 +31,10 @@ const occasions = [...new Set(songs.map(s => s.data.occasion))].sort((a, b) => a
 
 	<!-- Recherche + filtres -->
 	<div class="mb-4 flex flex-wrap items-center gap-3">
-		<input
-			id="search-input"
-			type="search"
-			placeholder="Rechercher un chant..."
-			class="flex-1 min-w-48 rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700"
-		/>
+		<input id="search-input" type="search" placeholder="Rechercher un chant..."
+			class="flex-1 min-w-48 rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
 		<div class="flex flex-wrap gap-2">
-			<button data-filter="" class="filter-btn rounded-full border border-blue-900 bg-blue-900 px-3 py-1 text-xs font-medium text-white transition-colors">
-				Tous
-			</button>
+			<button data-filter="" class="filter-btn rounded-full border border-blue-900 bg-blue-900 px-3 py-1 text-xs font-medium text-white transition-colors">Tous</button>
 			{occasions.map(occasion => (
 				<button data-filter={occasion} class="filter-btn rounded-full border border-stone-300 px-3 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-blue-900 hover:bg-blue-50 hover:text-blue-900">
 					{occasion}
@@ -56,10 +46,13 @@ const occasions = [...new Set(songs.map(s => s.data.occasion))].sort((a, b) => a
 	<!-- Tableau -->
 	<div class="overflow-x-auto rounded-xl border border-stone-200 bg-white shadow-sm">
 		<table class="min-w-full divide-y divide-stone-200 text-left">
-			<thead class="bg-stone-100 text-sm uppercase tracking-wide text-stone-600">
+			<thead class="bg-stone-100 text-xs uppercase tracking-wide text-stone-500">
 				<tr>
+					<th class="w-9 px-2 py-3 text-center font-medium" title="Soprano">S</th>
+					<th class="w-9 px-2 py-3 text-center font-medium" title="Alto">A</th>
+					<th class="w-9 px-2 py-3 text-center font-medium" title="Ténor">T</th>
+					<th class="w-9 px-2 py-3 text-center font-medium" title="Basse">B</th>
 					<th class="px-4 py-3 font-medium">Titre</th>
-					<th class="px-4 py-3 font-medium">Tonalité</th>
 					<th class="px-4 py-3 font-medium">Occasion</th>
 					<th class="px-4 py-3 font-medium">Partition</th>
 					<th class="admin-col hidden px-4 py-3 font-medium">Actions</th>
@@ -72,30 +65,61 @@ const occasions = [...new Set(songs.map(s => s.data.occasion))].sort((a, b) => a
 						data-occasion={song.data.occasion}
 						data-song-id={song.id}
 						data-song-title={song.data.title}
-						data-song-key={song.data.key}
 						data-song-occasion={song.data.occasion}
 						data-song-pdf={song.data.pdf || ''}
+						data-audio-s={audioUrl(song.data.audio_soprano)}
+						data-audio-a={audioUrl(song.data.audio_alto)}
+						data-audio-t={audioUrl(song.data.audio_tenor)}
+						data-audio-b={audioUrl(song.data.audio_basse)}
 					>
+						{/* Soprano */}
+						<td class="w-9 px-2 py-3 text-center">
+							{song.data.audio_soprano ? (
+								<button class="audio-btn inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-50 text-blue-700 transition-colors hover:bg-blue-100" data-voice="s" title="Soprano">
+									<svg class="play-icon h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>
+									<svg class="pause-icon hidden h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+								</button>
+							) : <span class="text-stone-200">–</span>}
+						</td>
+						{/* Alto */}
+						<td class="w-9 px-2 py-3 text-center">
+							{song.data.audio_alto ? (
+								<button class="audio-btn inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-50 text-blue-700 transition-colors hover:bg-blue-100" data-voice="a" title="Alto">
+									<svg class="play-icon h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>
+									<svg class="pause-icon hidden h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+								</button>
+							) : <span class="text-stone-200">–</span>}
+						</td>
+						{/* Ténor */}
+						<td class="w-9 px-2 py-3 text-center">
+							{song.data.audio_tenor ? (
+								<button class="audio-btn inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-50 text-blue-700 transition-colors hover:bg-blue-100" data-voice="t" title="Ténor">
+									<svg class="play-icon h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>
+									<svg class="pause-icon hidden h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+								</button>
+							) : <span class="text-stone-200">–</span>}
+						</td>
+						{/* Basse */}
+						<td class="w-9 px-2 py-3 text-center">
+							{song.data.audio_basse ? (
+								<button class="audio-btn inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-50 text-blue-700 transition-colors hover:bg-blue-100" data-voice="b" title="Basse">
+									<svg class="play-icon h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>
+									<svg class="pause-icon hidden h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+								</button>
+							) : <span class="text-stone-200">–</span>}
+						</td>
 						<td class="px-4 py-3 font-medium text-stone-900">{song.data.title}</td>
-						<td class="px-4 py-3">{song.data.key}</td>
 						<td class="px-4 py-3">{song.data.occasion}</td>
 						<td class="px-4 py-3">
 							{song.data.pdf ? (
-								<button class="pdf-btn text-blue-800 underline" data-url={`${import.meta.env.BASE_URL}${song.data.pdf.replace(/^\/+/, '')}`}>
+								<button class="pdf-btn text-blue-800 underline" data-url={`${base}${song.data.pdf.replace(/^\/+/, '')}`}>
 									Voir PDF
 								</button>
-							) : (
-								'Non renseigné'
-							)}
+							) : '–'}
 						</td>
 						<td class="admin-col hidden px-4 py-3">
 							<div class="flex items-center gap-2">
-								<button class="btn-edit-song rounded px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-50 transition-colors">
-									Modifier
-								</button>
-								<button class="btn-delete-song rounded px-2 py-1 text-xs font-medium text-red-500 hover:bg-red-50 transition-colors">
-									Supprimer
-								</button>
+								<button class="btn-delete-song rounded px-2 py-1 text-xs font-medium text-red-500 hover:bg-red-50 transition-colors">Supprimer</button>
 							</div>
 						</td>
 					</tr>
@@ -105,77 +129,10 @@ const occasions = [...new Set(songs.map(s => s.data.occasion))].sort((a, b) => a
 		<p id="no-results" class="hidden py-8 text-center text-sm text-stone-400">Aucun chant trouvé.</p>
 	</div>
 
-	<!-- ════ MODAL MODIFIER UN CHANT ════ -->
-	<div id="modal-edit-song" class="fixed inset-0 z-50 items-center justify-center bg-black/50 p-4" style="display:none;">
-		<div class="relative w-full max-w-lg rounded-xl bg-white shadow-xl">
-			<div class="flex items-center justify-between border-b border-stone-200 px-6 py-4">
-				<h2 class="text-xl font-semibold text-blue-950">Modifier le chant</h2>
-				<button id="btn-close-edit" class="rounded-full p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-900 transition-colors" aria-label="Fermer">
-					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-						<path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
-					</svg>
-				</button>
-			</div>
-			<div class="px-6 py-5">
-				<form id="form-edit-song" class="space-y-4">
-					<input type="hidden" id="edit-song-id" />
-					<div>
-						<label class="mb-1 block text-sm font-medium text-stone-700">Titre <span class="text-red-500">*</span></label>
-						<input id="edit-title" type="text" required
-							class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
-					</div>
-					<div>
-						<label class="mb-1 block text-sm font-medium text-stone-700">Tonalité</label>
-						<input id="edit-key" type="text" placeholder="Ex. : Ré majeur"
-							class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
-					</div>
-					<div>
-						<label class="mb-1 block text-sm font-medium text-stone-700">Type de chant <span class="text-red-500">*</span></label>
-						<select id="edit-occasion" required
-							class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700">
-							<option value="">-- Choisir --</option>
-							<option>Accueil</option>
-							<option>Kyrie</option>
-							<option>Gloria</option>
-							<option>Psaume</option>
-							<option>Alléluia</option>
-							<option>Prière universelle</option>
-							<option>Offertoire</option>
-							<option>Sanctus</option>
-							<option>Agnus Dei</option>
-							<option>Communion</option>
-							<option>Action de grâce</option>
-							<option>Envoi</option>
-							<option>En plus</option>
-							<option>Autre</option>
-						</select>
-					</div>
-					<div>
-						<label class="mb-1 block text-sm font-medium text-stone-700">Remplacer la partition (PDF)</label>
-						<p id="edit-pdf-current" class="mb-1 text-xs text-stone-400"></p>
-						<input id="edit-pdf" type="file" accept=".pdf"
-							class="w-full rounded-lg border border-stone-200 px-3 py-1.5 text-sm text-stone-600 file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-blue-50 file:px-3 file:py-1 file:text-sm file:font-medium file:text-blue-800 hover:file:bg-blue-100" />
-					</div>
-				</form>
-			</div>
-			<div class="flex justify-end gap-3 border-t border-stone-200 px-6 py-4">
-				<button type="button" id="btn-cancel-edit"
-					class="rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50 transition-colors">
-					Annuler
-				</button>
-				<button type="submit" form="form-edit-song"
-					class="rounded-lg bg-blue-800 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
-					Enregistrer
-				</button>
-			</div>
-		</div>
-	</div>
-
 	<!-- Visionneuse PDF -->
 	<div id="pdf-overlay" class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3" style="display: none;">
 		<div class="relative flex h-[95vh] w-[95vw] flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
-			<button id="btn-close-pdf"
-				class="absolute right-4 top-4 z-10 flex items-center gap-2 rounded-lg bg-blue-900 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-blue-700">
+			<button id="btn-close-pdf" class="absolute right-4 top-4 z-10 flex items-center gap-2 rounded-lg bg-blue-900 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-blue-700">
 				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
 					<path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
 				</svg>
@@ -205,137 +162,63 @@ document.getElementById('btn-admin-toggle')!.addEventListener('click', () => {
 	sessionStorage.setItem('vl_admin', adminMode ? '1' : '0');
 	updateAdminUI();
 });
-
 updateAdminUI();
 
-// ── localStorage helpers ───────────────────────────────────
-function loadHidden(): string[]     { try { return JSON.parse(localStorage.getItem('vl_hidden_songs') || '[]'); } catch { return []; } }
-function saveHidden(d: string[])    { localStorage.setItem('vl_hidden_songs', JSON.stringify(d)); }
-function loadOverrides(): Record<string, any> { try { return JSON.parse(localStorage.getItem('vl_song_overrides') || '{}'); } catch { return {}; } }
-function saveOverrides(d: Record<string, any>) { localStorage.setItem('vl_song_overrides', JSON.stringify(d)); }
+// ── Audio ──────────────────────────────────────────────────
+const audioPlayer = new Audio();
+let currentBtn: HTMLButtonElement | null = null;
 
-// ── Appliquer les overrides et cacher les supprimés ────────
-(function applyStoredChanges() {
-	const hidden   = loadHidden();
-	const overrides = loadOverrides();
-	document.querySelectorAll<HTMLTableRowElement>('#songs-tbody tr[data-song-id]').forEach(row => {
-		const id = row.dataset.songId!;
-		if (hidden.includes(id)) {
-			row.remove();
-			return;
-		}
-		if (overrides[id]) {
-			const o = overrides[id];
-			if (o.title) {
-				row.dataset.title = o.title.toLowerCase();
-				row.dataset.songTitle = o.title;
-				row.cells[0].textContent = o.title;
-			}
-			if (o.key !== undefined) {
-				row.dataset.songKey = o.key;
-				row.cells[1].textContent = o.key;
-			}
-			if (o.occasion) {
-				row.dataset.occasion = o.occasion;
-				row.dataset.songOccasion = o.occasion;
-				row.cells[2].textContent = o.occasion;
-			}
-		}
-	});
-})();
+function setPlaying(btn: HTMLButtonElement, playing: boolean) {
+	btn.querySelector('.play-icon')!.classList.toggle('hidden', playing);
+	btn.querySelector('.pause-icon')!.classList.toggle('hidden', !playing);
+	btn.classList.toggle('bg-blue-700', playing);
+	btn.classList.toggle('text-white', playing);
+	btn.classList.toggle('bg-blue-50', !playing);
+	btn.classList.toggle('text-blue-700', !playing);
+}
 
-// ── Supprimer ──────────────────────────────────────────────
+audioPlayer.addEventListener('ended', () => {
+	if (currentBtn) { setPlaying(currentBtn, false); currentBtn = null; }
+});
+
+// ── Délégation d'événements ────────────────────────────────
 document.getElementById('songs-tbody')!.addEventListener('click', (e) => {
 	const target = e.target as HTMLElement;
 
-	// Supprimer
+	const audioBtn = target.closest<HTMLButtonElement>('.audio-btn');
+	if (audioBtn) {
+		const row   = audioBtn.closest('tr') as HTMLTableRowElement;
+		const voice = audioBtn.dataset.voice!;
+		const url   = (row.dataset as any)[`audio${voice.toUpperCase()}`] as string;
+		if (!url) return;
+		if (currentBtn === audioBtn && !audioPlayer.paused) {
+			audioPlayer.pause();
+			setPlaying(audioBtn, false);
+			currentBtn = null;
+		} else {
+			if (currentBtn) setPlaying(currentBtn, false);
+			audioPlayer.src = url;
+			audioPlayer.play();
+			setPlaying(audioBtn, true);
+			currentBtn = audioBtn;
+		}
+		return;
+	}
+
 	if (target.closest('.btn-delete-song')) {
-		const row = target.closest('tr') as HTMLTableRowElement;
-		const title = row.dataset.songTitle || row.dataset.title || 'ce chant';
+		const row   = target.closest('tr') as HTMLTableRowElement;
+		const title = row.dataset.songTitle || 'ce chant';
 		if (!confirm(`Supprimer « ${title} » du répertoire ?`)) return;
-		const id = row.dataset.songId!;
-		const hidden = loadHidden();
-		if (!hidden.includes(id)) { hidden.push(id); saveHidden(hidden); }
 		row.remove();
 		return;
 	}
 
-	// Modifier
-	if (target.closest('.btn-edit-song')) {
-		const row = target.closest('tr') as HTMLTableRowElement;
-		openEditModal(row);
-		return;
-	}
-
-	// Voir PDF
-	if (target.closest('.pdf-btn')) {
-		const btn = target.closest('.pdf-btn') as HTMLButtonElement;
-		pdfFrame.src = btn.dataset.url!;
+	const pdfBtn = target.closest<HTMLButtonElement>('.pdf-btn');
+	if (pdfBtn) {
+		pdfFrame.src = pdfBtn.dataset.url!;
 		pdfOverlay.style.display = 'flex';
 		document.body.style.overflow = 'hidden';
 	}
-});
-
-// ── Modifier ───────────────────────────────────────────────
-const editModal   = document.getElementById('modal-edit-song') as HTMLElement;
-const editIdInput = document.getElementById('edit-song-id')    as HTMLInputElement;
-const editTitle   = document.getElementById('edit-title')      as HTMLInputElement;
-const editKey     = document.getElementById('edit-key')        as HTMLInputElement;
-const editOcc     = document.getElementById('edit-occasion')   as HTMLSelectElement;
-const editPdfCur  = document.getElementById('edit-pdf-current')!;
-let editTargetRow: HTMLTableRowElement | null = null;
-
-function openEditModal(row: HTMLTableRowElement) {
-	editTargetRow = row;
-	editIdInput.value = row.dataset.songId!;
-	editTitle.value   = row.dataset.songTitle || '';
-	editKey.value     = row.dataset.songKey   || '';
-	// Pré-sélectionner l'occasion si elle correspond à une option
-	const occ = row.dataset.songOccasion || '';
-	const match = Array.from(editOcc.options).find(o => o.value.toLowerCase() === occ.toLowerCase());
-	editOcc.value = match ? match.value : '';
-	const pdfVal = row.dataset.songPdf || '';
-	editPdfCur.textContent = pdfVal ? `Partition actuelle : ${pdfVal.split('/').pop()}` : 'Aucune partition enregistrée.';
-	(document.getElementById('edit-pdf') as HTMLInputElement).value = '';
-	editModal.style.display = 'flex';
-	document.body.style.overflow = 'hidden';
-}
-
-function closeEditModal() {
-	editModal.style.display = 'none';
-	document.body.style.overflow = '';
-	editTargetRow = null;
-}
-
-document.getElementById('btn-close-edit')!.addEventListener('click', closeEditModal);
-document.getElementById('btn-cancel-edit')!.addEventListener('click', closeEditModal);
-editModal.addEventListener('click', (e) => { if (e.target === editModal) closeEditModal(); });
-
-document.getElementById('form-edit-song')!.addEventListener('submit', (e) => {
-	e.preventDefault();
-	if (!editTargetRow) return;
-	const id      = editIdInput.value;
-	const title   = editTitle.value.trim();
-	const key     = editKey.value.trim();
-	const occasion = editOcc.value;
-	if (!title || !occasion) return;
-
-	// Mettre à jour les data-attributes et cellules du tableau
-	editTargetRow.dataset.title        = title.toLowerCase();
-	editTargetRow.dataset.songTitle    = title;
-	editTargetRow.dataset.songKey      = key;
-	editTargetRow.dataset.occasion     = occasion;
-	editTargetRow.dataset.songOccasion = occasion;
-	editTargetRow.cells[0].textContent = title;
-	editTargetRow.cells[1].textContent = key;
-	editTargetRow.cells[2].textContent = occasion;
-
-	// Persister dans localStorage
-	const overrides = loadOverrides();
-	overrides[id] = { title, key, occasion };
-	saveOverrides(overrides);
-
-	closeEditModal();
 });
 
 // ── Recherche + filtre ─────────────────────────────────────
@@ -349,9 +232,7 @@ function applyFilters() {
 	const rows  = document.querySelectorAll<HTMLTableRowElement>('#songs-tbody tr');
 	let visible = 0;
 	rows.forEach(row => {
-		const titleMatch  = (row.dataset.title || '').includes(query);
-		const filterMatch = !activeFilter || row.dataset.occasion === activeFilter;
-		const show = titleMatch && filterMatch;
+		const show = (row.dataset.title || '').includes(query) && (!activeFilter || row.dataset.occasion === activeFilter);
 		row.style.display = show ? '' : 'none';
 		if (show) visible++;
 	});
@@ -359,35 +240,23 @@ function applyFilters() {
 }
 
 searchInput.addEventListener('input', applyFilters);
-
 filterBtns.forEach(btn => {
 	btn.addEventListener('click', () => {
 		activeFilter = btn.dataset.filter!;
 		filterBtns.forEach(b => {
-			const isActive = b === btn;
-			b.classList.toggle('bg-blue-900', isActive);
-			b.classList.toggle('text-white', isActive);
-			b.classList.toggle('border-blue-900', isActive);
-			b.classList.toggle('text-stone-600', !isActive);
-			b.classList.toggle('border-stone-300', !isActive);
+			const on = b === btn;
+			b.classList.toggle('bg-blue-900', on); b.classList.toggle('text-white', on); b.classList.toggle('border-blue-900', on);
+			b.classList.toggle('text-stone-600', !on); b.classList.toggle('border-stone-300', !on);
 		});
 		applyFilters();
 	});
 });
 
 // ── Visionneuse PDF ────────────────────────────────────────
-const pdfOverlay  = document.getElementById('pdf-overlay') as HTMLElement;
-const pdfFrame    = document.getElementById('pdf-frame')   as HTMLIFrameElement;
-const btnClosePdf = document.getElementById('btn-close-pdf')!;
+const pdfOverlay = document.getElementById('pdf-overlay') as HTMLElement;
+const pdfFrame   = document.getElementById('pdf-frame')   as HTMLIFrameElement;
 
-// Les clics PDF sont gérés par la délégation sur le tbody ci-dessus
-
-btnClosePdf.addEventListener('click', closePdf);
+document.getElementById('btn-close-pdf')!.addEventListener('click', closePdf);
 pdfOverlay.addEventListener('click', (e) => { if (e.target === pdfOverlay) closePdf(); });
-
-function closePdf() {
-	pdfOverlay.style.display = 'none';
-	pdfFrame.src = '';
-	document.body.style.overflow = '';
-}
+function closePdf() { pdfOverlay.style.display = 'none'; pdfFrame.src = ''; document.body.style.overflow = ''; }
 </script>

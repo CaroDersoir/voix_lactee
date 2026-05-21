@@ -100,6 +100,31 @@ const base = import.meta.env.DEV
             <input id="song-pdf" type="file" accept=".pdf"
               class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-700 file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-blue-50 file:px-3 file:py-1 file:text-sm file:font-medium file:text-blue-800 hover:file:bg-blue-100" />
           </div>
+          <div>
+            <p class="mb-2 text-sm font-medium text-stone-700">Pistes audio (MP3)</p>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="mb-1 block text-xs text-stone-500">Soprano</label>
+                <input id="song-audio-s" type="file" accept=".mp3,audio/*"
+                  class="w-full rounded-lg border border-stone-300 px-2 py-1.5 text-xs text-stone-700 file:mr-2 file:cursor-pointer file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-0.5 file:text-xs file:font-medium file:text-blue-800 hover:file:bg-blue-100" />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs text-stone-500">Alto</label>
+                <input id="song-audio-a" type="file" accept=".mp3,audio/*"
+                  class="w-full rounded-lg border border-stone-300 px-2 py-1.5 text-xs text-stone-700 file:mr-2 file:cursor-pointer file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-0.5 file:text-xs file:font-medium file:text-blue-800 hover:file:bg-blue-100" />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs text-stone-500">Ténor</label>
+                <input id="song-audio-t" type="file" accept=".mp3,audio/*"
+                  class="w-full rounded-lg border border-stone-300 px-2 py-1.5 text-xs text-stone-700 file:mr-2 file:cursor-pointer file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-0.5 file:text-xs file:font-medium file:text-blue-800 hover:file:bg-blue-100" />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs text-stone-500">Basse</label>
+                <input id="song-audio-b" type="file" accept=".mp3,audio/*"
+                  class="w-full rounded-lg border border-stone-300 px-2 py-1.5 text-xs text-stone-700 file:mr-2 file:cursor-pointer file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-0.5 file:text-xs file:font-medium file:text-blue-800 hover:file:bg-blue-100" />
+              </div>
+            </div>
+          </div>
           <div id="song-status" class="hidden rounded-lg px-3 py-2 text-sm"></div>
           <button type="submit"
             class="rounded-lg bg-blue-900 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-800">
@@ -570,13 +595,35 @@ document.getElementById('form-add-song').addEventListener('submit', async e => {
   const pdfFile = document.getElementById('song-pdf').files[0];
   setStatus('song-status', 'loading', 'Enregistrement en cours…');
   try {
+    const slug = slugify(title);
     let pdfPath = '';
     if (pdfFile) {
-      await ghPut(`public/uploads/${slugify(title)}.pdf`, await fileToBase64(pdfFile), `ajout partition: ${title}`);
-      pdfPath = `uploads/${slugify(title)}.pdf`;
+      await ghPut(`public/uploads/${slug}.pdf`, await fileToBase64(pdfFile), `ajout partition: ${title}`);
+      pdfPath = `uploads/${slug}.pdf`;
     }
-    const md = ['---', `title: ${yamlStr(title)}`, key ? `key: ${yamlStr(key)}` : null, `occasion: ${yamlStr(occasion)}`, pdfPath ? `pdf: ${pdfPath}` : null, '---', ''].filter(l => l !== null).join('\n');
-    await ghPut(`src/content/songs/${slugify(title)}.md`, b64encode(md), `ajout chant: ${title}`);
+    const audioVoices = [
+      { id: 'song-audio-s', field: 'audio_soprano', suffix: '-soprano' },
+      { id: 'song-audio-a', field: 'audio_alto',    suffix: '-alto'    },
+      { id: 'song-audio-t', field: 'audio_tenor',   suffix: '-tenor'   },
+      { id: 'song-audio-b', field: 'audio_basse',   suffix: '-basse'   },
+    ];
+    const audioPaths: Record<string, string> = {};
+    for (const v of audioVoices) {
+      const file = (document.getElementById(v.id) as HTMLInputElement).files?.[0];
+      if (file) {
+        const ext = file.name.split('.').pop() || 'mp3';
+        await ghPut(`public/uploads/${slug}${v.suffix}.${ext}`, await fileToBase64(file), `ajout audio ${v.field}: ${title}`);
+        audioPaths[v.field] = `uploads/${slug}${v.suffix}.${ext}`;
+      }
+    }
+    const mdLines = ['---', `title: ${yamlStr(title)}`, key ? `key: ${yamlStr(key)}` : null, `occasion: ${yamlStr(occasion)}`,
+      pdfPath ? `pdf: ${pdfPath}` : null,
+      audioPaths.audio_soprano ? `audio_soprano: ${audioPaths.audio_soprano}` : null,
+      audioPaths.audio_alto    ? `audio_alto: ${audioPaths.audio_alto}`       : null,
+      audioPaths.audio_tenor   ? `audio_tenor: ${audioPaths.audio_tenor}`     : null,
+      audioPaths.audio_basse   ? `audio_basse: ${audioPaths.audio_basse}`     : null,
+      '---', ''].filter(l => l !== null).join('\n');
+    await ghPut(`src/content/songs/${slug}.md`, b64encode(mdLines), `ajout chant: ${title}`);
     setStatus('song-status', 'ok', '✓ Ajouté. Mise à jour du site dans ~2 min.'); e.target.reset(); loadSongs(); triggerRebuild();
   } catch(err) { setStatus('song-status', 'error', 'Erreur : ' + err.message); }
 });

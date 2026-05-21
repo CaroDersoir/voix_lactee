@@ -7,7 +7,11 @@ const songs = defineCollection({
 		title: z.string(),
 		key: z.string().optional(),
 		occasion: z.string(),
-		pdf: z.string().optional()
+		pdf: z.string().optional(),
+		audio_soprano: z.string().optional(),
+		audio_alto: z.string().optional(),
+		audio_tenor: z.string().optional(),
+		audio_basse: z.string().optional()
 	})
 });
 
