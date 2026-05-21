@@ -1,5 +1,6 @@
 ---
 import '../../styles/global.css';
+const GH_TOKEN = import.meta.env.GH_TOKEN ?? '';
 ---
 <!doctype html>
 <html lang="fr">
@@ -156,11 +157,11 @@ import '../../styles/global.css';
   </main>
 </div>
 
-<script is:inline>
+<script is:inline define:vars={{ GH_TOKEN }}>
 const OWNER  = 'CaroDersoir';
 const REPO   = 'voix_lactee';
 const BRANCH = 'main';
-const TOKEN  = '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';
+const TOKEN  = GH_TOKEN;
 const CREDS  = { user: 'admin', pass: 'jcroispasnon' };
 const SESSION_KEY = 'vl_admin_ok';
 
