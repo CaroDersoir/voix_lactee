@@ -1,5 +1,5 @@
 ---
 title: Que vienne ton règne
-occasion: Sortie
+occasion: Envoi
 pdf: uploads/que-vienne-ton-regne.pdf
 ---
