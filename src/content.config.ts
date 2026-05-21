@@ -26,6 +26,7 @@ const events = defineCollection({
 		type: z.enum(['messe', 'autre']).optional(),
 		animateur: z.string().optional(),
 		chef_choeur: z.string().optional(),
+		organiste: z.string().optional(),
 		program_accueil: z.string().optional(),
 		program_kyrie: z.string().optional(),
 		program_gloria: z.string().optional(),

@@ -234,6 +234,11 @@ const base = import.meta.env.DEV
             <input id="evt-chef-choeur" type="text" placeholder="Prénom Nom"
               class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
           </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-stone-700">Organiste</label>
+            <input id="evt-organiste" type="text" placeholder="Prénom Nom"
+              class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
+          </div>
           <div id="evt-status" class="hidden rounded-lg px-3 py-2 text-sm"></div>
           <div class="flex justify-between pt-2">
             <button id="evt-btn-back3" type="button"
@@ -369,7 +374,7 @@ const base = import.meta.env.DEV
           <h3 class="mb-2 border-t border-stone-100 pt-3 text-sm font-semibold text-stone-600">Programme</h3>
           <div id="edit-evt-program-slots" class="space-y-2"></div>
         </div>
-        <div class="grid grid-cols-2 gap-4 border-t border-stone-100 pt-3">
+        <div class="grid grid-cols-3 gap-4 border-t border-stone-100 pt-3">
           <div>
             <label class="mb-1 block text-sm font-medium text-stone-700">Animateur·ice</label>
             <input id="edit-evt-animateur" type="text"
@@ -378,6 +383,11 @@ const base = import.meta.env.DEV
           <div>
             <label class="mb-1 block text-sm font-medium text-stone-700">Chef·fe de chœur</label>
             <input id="edit-evt-chef-choeur" type="text"
+              class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-stone-700">Organiste</label>
+            <input id="edit-evt-organiste" type="text"
               class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
           </div>
         </div>
@@ -776,6 +786,7 @@ async function submitEvt(editPath, editSha) {
   const type  = document.querySelector(`input[name="${isEdit ? 'edit-evt-type' : 'evt-type'}"]:checked`)?.value || 'messe';
   const anim  = document.getElementById(isEdit ? 'edit-evt-animateur'  : 'evt-animateur').value.trim();
   const chef  = document.getElementById(isEdit ? 'edit-evt-chef-choeur': 'evt-chef-choeur').value.trim();
+  const org   = document.getElementById(isEdit ? 'edit-evt-organiste'  : 'evt-organiste').value.trim();
   const statusId = isEdit ? 'edit-evt-status' : 'evt-status';
   if (!title || !date) { setStatus(statusId, 'error', 'Titre et date obligatoires.'); return; }
   setStatus(statusId, 'loading', 'Enregistrement en cours…');
@@ -785,6 +796,7 @@ async function submitEvt(editPath, editSha) {
     lines.push(`type: ${type}`);
     if (anim) lines.push(`animateur: ${yamlStr(anim)}`);
     if (chef) lines.push(`chef_choeur: ${yamlStr(chef)}`);
+    if (org)  lines.push(`organiste: ${yamlStr(org)}`);
     const slotsContainer = document.getElementById(isEdit ? 'edit-evt-program-slots' : 'evt-program-slots');
     slotsContainer?.querySelectorAll('.slot-select').forEach(sel => {
       if (sel.value) lines.push(`program_${sel.dataset.slot}: ${sel.value}`);
@@ -796,7 +808,7 @@ async function submitEvt(editPath, editSha) {
     setTimeout(() => {
       if (isEdit) { closeEditEventModal(); }
       else {
-        ['evt-title','evt-date','evt-time','evt-location','evt-description','evt-animateur','evt-chef-choeur'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
+        ['evt-title','evt-date','evt-time','evt-location','evt-description','evt-animateur','evt-chef-choeur','evt-organiste'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
         showEvtStep(1);
       }
       loadEvents(); triggerRebuild();
@@ -822,6 +834,7 @@ async function loadEvents() {
       type:        md.match(/^type:\s*(.+)$/m)?.[1]?.trim() || 'messe',
       animateur:   md.match(/^animateur:\s*(.+)$/m)?.[1]?.trim() || '',
       chef_choeur: md.match(/^chef_choeur:\s*(.+)$/m)?.[1]?.trim() || '',
+      organiste:   md.match(/^organiste:\s*(.+)$/m)?.[1]?.trim() || '',
     };
     MASS_SLOTS.forEach(s => {
       ev['program_' + s.key] = md.match(new RegExp(`^program_${s.key}:\\s*(.+)$`, 'm'))?.[1]?.trim() || '';
@@ -871,6 +884,7 @@ function openEditEventModal(ev) {
   document.querySelectorAll('input[name="edit-evt-type"]').forEach(r => r.checked = r.value === ev.type);
   document.getElementById('edit-evt-animateur').value   = ev.animateur;
   document.getElementById('edit-evt-chef-choeur').value = ev.chef_choeur;
+  document.getElementById('edit-evt-organiste').value   = ev.organiste;
   const isMesse = ev.type === 'messe';
   document.getElementById('edit-evt-program-section').classList.toggle('hidden', !isMesse);
   if (isMesse) {

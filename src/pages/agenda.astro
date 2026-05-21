@@ -33,6 +33,7 @@ const upcomingEvents = events
 			data-type={event.data.type ?? ''}
 			data-animateur={event.data.animateur ?? ''}
 			data-chef-choeur={event.data.chef_choeur ?? ''}
+			data-organiste={event.data.organiste ?? ''}
 			data-program={event.progJson}
 		>
 				<h2 class="text-lg font-semibold text-blue-950">{event.data.title}</h2>
@@ -162,10 +163,12 @@ const upcomingEvents = events
 		const teamEl = document.getElementById('detail-team')!;
 		const anim = card.dataset.animateur || '';
 		const chef = card.dataset.chefChoeur || '';
-		if (anim || chef) {
+		const org  = card.dataset.organiste || '';
+		if (anim || chef || org) {
 			teamEl.innerHTML = [
 				anim ? `<span>Animateur·ice : <strong>${anim}</strong></span>` : '',
 				chef ? `<span>Chef·fe de chœur : <strong>${chef}</strong></span>` : '',
+				org  ? `<span>Organiste : <strong>${org}</strong></span>` : '',
 			].filter(Boolean).join('');
 			teamEl.style.display = 'flex';
 		} else { teamEl.style.display = 'none'; }
