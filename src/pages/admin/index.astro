@@ -126,27 +126,51 @@ const base = import.meta.env.DEV
     <div id="tab-events" class="hidden">
       <div class="rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
         <h2 class="mb-4 text-sm font-semibold uppercase tracking-wide text-stone-500">Ajouter un événement</h2>
-        <form id="form-add-event" class="space-y-4">
+
+        <!-- Indicateur d'étapes -->
+        <div id="evt-steps-ind" class="mb-5 flex items-center gap-1.5 text-xs">
+          <span id="evt-ind-1" class="font-semibold text-blue-900">1. Infos</span>
+          <span id="evt-ind-sep1" class="hidden text-stone-300">›</span>
+          <span id="evt-ind-2" class="hidden text-stone-400">2. Programme</span>
+          <span id="evt-ind-sep2" class="hidden text-stone-300">›</span>
+          <span id="evt-ind-3" class="hidden text-stone-400">3. Équipe</span>
+        </div>
+
+        <!-- Étape 1 : Informations de base -->
+        <div id="evt-step-1" class="space-y-4">
           <div>
             <label class="mb-1 block text-sm font-medium text-stone-700">Titre <span class="text-red-500">*</span></label>
-            <input id="evt-title" type="text" required
+            <input id="evt-title" type="text"
               class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
+          </div>
+          <div>
+            <label class="mb-2 block text-sm font-medium text-stone-700">Type <span class="text-red-500">*</span></label>
+            <div class="flex gap-5">
+              <label class="flex cursor-pointer items-center gap-2">
+                <input type="radio" name="evt-type" value="messe" checked class="accent-blue-700" />
+                <span class="text-sm text-stone-700">Messe</span>
+              </label>
+              <label class="flex cursor-pointer items-center gap-2">
+                <input type="radio" name="evt-type" value="autre" class="accent-blue-700" />
+                <span class="text-sm text-stone-700">Autre</span>
+              </label>
+            </div>
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="mb-1 block text-sm font-medium text-stone-700">Date <span class="text-red-500">*</span></label>
-              <input id="evt-date" type="date" required
+              <input id="evt-date" type="date"
                 class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
             </div>
             <div>
               <label class="mb-1 block text-sm font-medium text-stone-700">Heure <span class="text-red-500">*</span></label>
-              <input id="evt-time" type="time" required
+              <input id="evt-time" type="time"
                 class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
             </div>
           </div>
           <div>
             <label class="mb-1 block text-sm font-medium text-stone-700">Lieu <span class="text-red-500">*</span></label>
-            <input id="evt-location" type="text" required
+            <input id="evt-location" type="text"
               class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
           </div>
           <div>
@@ -154,13 +178,47 @@ const base = import.meta.env.DEV
             <textarea id="evt-description" rows="2"
               class="w-full resize-none rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700"></textarea>
           </div>
+          <div id="evt-status-1" class="hidden rounded-lg px-3 py-2 text-sm"></div>
+          <div class="flex justify-end">
+            <button id="evt-btn-next1" type="button"
+              class="rounded-lg bg-blue-900 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-800">Suivant →</button>
+          </div>
+        </div>
+
+        <!-- Étape 2 : Programme (messe) -->
+        <div id="evt-step-2" class="hidden space-y-3">
+          <p class="text-xs text-stone-400">Choisir un chant du répertoire ou importer un PDF. Tout est optionnel et modifiable après coup.</p>
+          <div id="evt-program-slots" class="space-y-2"></div>
+          <div class="flex justify-between pt-2">
+            <button id="evt-btn-back2" type="button"
+              class="rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50">← Retour</button>
+            <button id="evt-btn-next2" type="button"
+              class="rounded-lg bg-blue-900 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-800">Suivant →</button>
+          </div>
+        </div>
+
+        <!-- Étape 3 : Équipe -->
+        <div id="evt-step-3" class="hidden space-y-4">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-stone-700">Animateur·ice</label>
+            <input id="evt-animateur" type="text" placeholder="Prénom Nom"
+              class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-stone-700">Chef·fe de chœur</label>
+            <input id="evt-chef-choeur" type="text" placeholder="Prénom Nom"
+              class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
+          </div>
           <div id="evt-status" class="hidden rounded-lg px-3 py-2 text-sm"></div>
-          <button type="submit"
-            class="rounded-lg bg-blue-900 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-800">
-            Ajouter l'événement
-          </button>
-        </form>
+          <div class="flex justify-between pt-2">
+            <button id="evt-btn-back3" type="button"
+              class="rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50">← Retour</button>
+            <button id="evt-btn-submit" type="button"
+              class="rounded-lg bg-blue-900 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-800">Ajouter l'événement</button>
+          </div>
+        </div>
       </div>
+
       <div class="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
         <div class="border-b border-stone-100 px-6 py-4">
           <h2 class="text-sm font-semibold uppercase tracking-wide text-stone-500">Événements existants</h2>
@@ -227,6 +285,89 @@ const base = import.meta.env.DEV
   </div>
 </div>
 
+<!-- ── Modale : modifier un événement ── -->
+<div id="modal-edit-event" class="fixed inset-0 z-50 items-center justify-center bg-black/50 p-4" style="display:none;">
+  <div class="w-full max-w-2xl rounded-xl bg-white shadow-xl" style="max-height:90vh;overflow-y:auto;">
+    <div class="flex items-center justify-between border-b border-stone-200 px-6 py-4">
+      <h2 class="text-base font-semibold text-blue-950">Modifier l'événement</h2>
+      <button id="btn-close-edit-event" class="rounded-full p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-900 transition-colors" aria-label="Fermer">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+      </button>
+    </div>
+    <form id="form-edit-event">
+      <div class="space-y-4 px-6 py-5">
+        <input type="hidden" id="edit-evt-path" />
+        <input type="hidden" id="edit-evt-sha" />
+        <div>
+          <label class="mb-1 block text-sm font-medium text-stone-700">Titre <span class="text-red-500">*</span></label>
+          <input id="edit-evt-title" type="text" required
+            class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
+        </div>
+        <div>
+          <label class="mb-2 block text-sm font-medium text-stone-700">Type</label>
+          <div class="flex gap-5">
+            <label class="flex cursor-pointer items-center gap-2">
+              <input type="radio" name="edit-evt-type" value="messe" class="accent-blue-700" />
+              <span class="text-sm text-stone-700">Messe</span>
+            </label>
+            <label class="flex cursor-pointer items-center gap-2">
+              <input type="radio" name="edit-evt-type" value="autre" class="accent-blue-700" />
+              <span class="text-sm text-stone-700">Autre</span>
+            </label>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-stone-700">Date <span class="text-red-500">*</span></label>
+            <input id="edit-evt-date" type="date" required
+              class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-stone-700">Heure</label>
+            <input id="edit-evt-time" type="time"
+              class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
+          </div>
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-stone-700">Lieu</label>
+          <input id="edit-evt-location" type="text"
+            class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-stone-700">Description</label>
+          <textarea id="edit-evt-description" rows="2"
+            class="w-full resize-none rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700"></textarea>
+        </div>
+        <div id="edit-evt-program-section">
+          <h3 class="mb-2 border-t border-stone-100 pt-3 text-sm font-semibold text-stone-600">Programme</h3>
+          <div id="edit-evt-program-slots" class="space-y-2"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-4 border-t border-stone-100 pt-3">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-stone-700">Animateur·ice</label>
+            <input id="edit-evt-animateur" type="text"
+              class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-stone-700">Chef·fe de chœur</label>
+            <input id="edit-evt-chef-choeur" type="text"
+              class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
+          </div>
+        </div>
+        <div id="edit-evt-status" class="hidden rounded-lg px-3 py-2 text-sm"></div>
+      </div>
+      <div class="flex justify-end gap-3 border-t border-stone-200 px-6 py-4">
+        <button type="button" id="btn-cancel-edit-event"
+          class="rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50 transition-colors">Annuler</button>
+        <button type="submit"
+          class="rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 transition-colors">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script is:inline define:vars={{ GH_TOKEN, NETLIFY_BUILD_HOOK }}>
 const OWNER  = 'CaroDersoir';
 async function triggerRebuild() { if (NETLIFY_BUILD_HOOK) fetch(NETLIFY_BUILD_HOOK, { method: 'POST' }); }
@@ -236,6 +377,21 @@ const TOKEN  = GH_TOKEN;
 const CREDS  = { user: 'admin', pass: 'jcroispasnon' };
 const SESSION_KEY = 'vl_admin_ok';
 const OCCASION_OPTIONS = ['Accueil','Kyrie','Gloria','Psaume','Alléluia','Prière universelle','Offertoire','Sanctus','Agnus Dei','Communion','Action de grâce','Envoi','En plus','Autre'];
+const MASS_SLOTS = [
+  { key: 'accueil',            label: 'Accueil',            occasion: 'Accueil' },
+  { key: 'kyrie',              label: 'Kyrie',              occasion: 'Kyrie' },
+  { key: 'gloria',             label: 'Gloria',             occasion: 'Gloria' },
+  { key: 'psaume',             label: 'Psaume',             occasion: 'Psaume' },
+  { key: 'alleluia',           label: 'Alléluia',           occasion: 'Alléluia' },
+  { key: 'priere_universelle', label: 'Prière universelle', occasion: 'Prière universelle' },
+  { key: 'offertoire',         label: 'Offertoire',         occasion: 'Offertoire' },
+  { key: 'sanctus',            label: 'Sanctus',            occasion: 'Sanctus' },
+  { key: 'agnus',              label: 'Agnus Dei',          occasion: 'Agnus Dei' },
+  { key: 'communion',          label: 'Communion',          occasion: 'Communion' },
+  { key: 'action_grace',       label: 'Action de grâce',   occasion: 'Action de grâce' },
+  { key: 'envoi',              label: 'Envoi',              occasion: 'Envoi' },
+  { key: 'en_plus',            label: 'En plus',            occasion: 'En plus' },
+];
 
 function buildOccasionSelect(selectEl, current) {
   selectEl.innerHTML = '<option value="">-- Choisir --</option>' +
@@ -478,7 +634,129 @@ document.getElementById('form-edit-song').addEventListener('submit', async e => 
   } catch(err) { setStatus('edit-status', 'error', 'Erreur : ' + err.message); }
 });
 
-// Événements
+// ── Événements ────────────────────────────────────────────────
+let adminEvtsCache = [];
+
+function buildProgramSlots(container, currentProgram) {
+  container.innerHTML = MASS_SLOTS.map(slot => {
+    const songs = adminSongsCache.filter(s => (slot.key === 'en_plus' || s.occasion === slot.occasion) && s.pdf);
+    const cur = (currentProgram || {})[slot.key] || '';
+    const opts = songs.map(s => `<option value="${s.pdf}"${s.pdf === cur ? ' selected' : ''}>${s.title}</option>`).join('');
+    return `<div class="flex items-center gap-2">
+      <span class="w-36 flex-shrink-0 text-xs font-medium text-stone-600">${slot.label}</span>
+      <select class="slot-select flex-1 rounded-lg border border-stone-300 px-2 py-1.5 text-xs focus:border-blue-700 focus:outline-none" data-slot="${slot.key}">
+        <option value="">-- Aucun --</option>${opts}
+      </select>
+      <label class="flex-shrink-0 cursor-pointer rounded border border-stone-300 px-2 py-1 text-xs text-stone-500 hover:border-blue-600 hover:text-blue-700 transition-colors">
+        Importer
+        <input type="file" accept=".pdf" class="slot-file hidden" data-slot="${slot.key}" data-occasion="${slot.occasion}" data-label="${slot.label}" />
+      </label>
+      <span class="slot-status w-4 flex-shrink-0 text-xs text-stone-400" data-slot="${slot.key}"></span>
+    </div>`;
+  }).join('');
+
+  container.querySelectorAll('.slot-file').forEach(input => {
+    input.addEventListener('change', async () => {
+      const file = input.files[0]; if (!file) return;
+      const title = prompt(`Titre du chant (${input.dataset.label}) :`, file.name.replace(/\.pdf$/i, ''));
+      if (!title) { input.value = ''; return; }
+      const statusEl = container.querySelector(`.slot-status[data-slot="${input.dataset.slot}"]`);
+      statusEl.textContent = '…';
+      try {
+        const pdfPath = `uploads/${slugify(title)}.pdf`;
+        await ghPut(`public/${pdfPath}`, await fileToBase64(file), `partition: ${title}`);
+        const songMd = ['---', `title: ${yamlStr(title)}`, `occasion: ${yamlStr(input.dataset.occasion)}`, `pdf: ${pdfPath}`, '---', ''].join('\n');
+        await ghPut(`src/content/songs/${slugify(title)}.md`, b64encode(songMd), `ajout chant: ${title}`);
+        const sel = container.querySelector(`.slot-select[data-slot="${input.dataset.slot}"]`);
+        const opt = new Option(title, pdfPath, true, true);
+        sel.appendChild(opt);
+        statusEl.textContent = '✓';
+        loadSongs();
+      } catch { statusEl.textContent = '✗'; }
+    });
+  });
+}
+
+// Wizard ajout événement
+let evtStep = 1;
+function showEvtStep(n) {
+  evtStep = n;
+  [1, 2, 3].forEach(i => document.getElementById('evt-step-' + i).classList.toggle('hidden', i !== n));
+  const isMesse = document.querySelector('input[name="evt-type"]:checked')?.value === 'messe';
+  document.getElementById('evt-ind-sep1').classList.toggle('hidden', n < 2 || !isMesse);
+  document.getElementById('evt-ind-2').classList.toggle('hidden', n < 2 || !isMesse);
+  document.getElementById('evt-ind-sep2').classList.toggle('hidden', n < 3);
+  document.getElementById('evt-ind-3').classList.toggle('hidden', n < 3);
+  ['evt-ind-1','evt-ind-2','evt-ind-3'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (el) { el.classList.toggle('font-semibold', n === i + 1); el.classList.toggle('text-blue-900', n >= i + 1); el.classList.toggle('text-stone-400', n < i + 1); }
+  });
+}
+
+document.getElementById('evt-btn-next1').addEventListener('click', () => {
+  const title = document.getElementById('evt-title').value.trim();
+  const date  = document.getElementById('evt-date').value;
+  const time  = document.getElementById('evt-time').value;
+  const loc   = document.getElementById('evt-location').value.trim();
+  if (!title || !date || !time || !loc) {
+    setStatus('evt-status-1', 'error', 'Veuillez remplir les champs obligatoires.');
+    return;
+  }
+  document.getElementById('evt-status-1').classList.add('hidden');
+  const isMesse = document.querySelector('input[name="evt-type"]:checked')?.value === 'messe';
+  if (isMesse) {
+    buildProgramSlots(document.getElementById('evt-program-slots'), {});
+    showEvtStep(2);
+  } else {
+    showEvtStep(3);
+  }
+});
+document.getElementById('evt-btn-back2').addEventListener('click', () => showEvtStep(1));
+document.getElementById('evt-btn-next2').addEventListener('click', () => showEvtStep(3));
+document.getElementById('evt-btn-back3').addEventListener('click', () => {
+  const isMesse = document.querySelector('input[name="evt-type"]:checked')?.value === 'messe';
+  showEvtStep(isMesse ? 2 : 1);
+});
+document.getElementById('evt-btn-submit').addEventListener('click', submitEvt);
+
+async function submitEvt(editPath, editSha) {
+  const isEdit = typeof editPath === 'string';
+  const title = document.getElementById(isEdit ? 'edit-evt-title' : 'evt-title').value.trim();
+  const date  = document.getElementById(isEdit ? 'edit-evt-date'  : 'evt-date').value;
+  const time  = document.getElementById(isEdit ? 'edit-evt-time'  : 'evt-time').value;
+  const loc   = document.getElementById(isEdit ? 'edit-evt-location' : 'evt-location').value.trim();
+  const desc  = document.getElementById(isEdit ? 'edit-evt-description' : 'evt-description').value.trim();
+  const type  = document.querySelector(`input[name="${isEdit ? 'edit-evt-type' : 'evt-type'}"]:checked`)?.value || 'messe';
+  const anim  = document.getElementById(isEdit ? 'edit-evt-animateur'  : 'evt-animateur').value.trim();
+  const chef  = document.getElementById(isEdit ? 'edit-evt-chef-choeur': 'evt-chef-choeur').value.trim();
+  const statusId = isEdit ? 'edit-evt-status' : 'evt-status';
+  if (!title || !date) { setStatus(statusId, 'error', 'Titre et date obligatoires.'); return; }
+  setStatus(statusId, 'loading', 'Enregistrement en cours…');
+  try {
+    const lines = ['---', `title: ${yamlStr(title)}`, `date: ${date}`, `time: "${time}"`, `location: ${yamlStr(loc)}`];
+    if (desc) lines.push(`description: ${yamlStr(desc)}`);
+    lines.push(`type: ${type}`);
+    if (anim) lines.push(`animateur: ${yamlStr(anim)}`);
+    if (chef) lines.push(`chef_choeur: ${yamlStr(chef)}`);
+    const slotsContainer = document.getElementById(isEdit ? 'edit-evt-program-slots' : 'evt-program-slots');
+    slotsContainer?.querySelectorAll('.slot-select').forEach(sel => {
+      if (sel.value) lines.push(`program_${sel.dataset.slot}: ${sel.value}`);
+    });
+    lines.push('---', '');
+    const filePath = isEdit ? editPath : `src/content/events/${date}-${slugify(title)}.md`;
+    await ghPut(filePath, b64encode(lines.join('\n')), `${isEdit ? 'modif' : 'ajout'} événement: ${title}`, isEdit ? editSha : undefined);
+    setStatus(statusId, 'ok', `✓ ${isEdit ? 'Modifié' : 'Ajouté'}. Mise à jour dans ~2 min.`);
+    setTimeout(() => {
+      if (isEdit) { closeEditEventModal(); }
+      else {
+        ['evt-title','evt-date','evt-time','evt-location','evt-description','evt-animateur','evt-chef-choeur'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
+        showEvtStep(1);
+      }
+      loadEvents(); triggerRebuild();
+    }, 1000);
+  } catch(err) { setStatus(statusId, 'error', 'Erreur : ' + err.message); }
+}
+
 async function loadEvents() {
   const list = document.getElementById('events-list');
   list.innerHTML = '<p class="px-6 py-5 text-stone-400 italic">Chargement…</p>';
@@ -487,22 +765,41 @@ async function loadEvents() {
   const evts = await Promise.all(files.map(async f => {
     const d = await ghGet(`contents/${f.path}`);
     const md = b64decode(d.content);
-    return { path: f.path, sha: d.sha,
-      title: md.match(/^title:\s*(.+)$/m)?.[1]?.trim().replace(/^"|"$/g, '') || f.name,
-      date: md.match(/^date:\s*(.+)$/m)?.[1]?.trim() || '',
-      time: md.match(/^time:\s*"?([^"\n]+)"?$/m)?.[1]?.trim() || '',
-      location: md.match(/^location:\s*(.+)$/m)?.[1]?.trim() || '' };
+    const ev = {
+      path: f.path, sha: d.sha,
+      title:       md.match(/^title:\s*(.+)$/m)?.[1]?.trim().replace(/^"|"$/g,'') || f.name,
+      date:        md.match(/^date:\s*(.+)$/m)?.[1]?.trim() || '',
+      time:        md.match(/^time:\s*"?([^"\n]+)"?$/m)?.[1]?.trim() || '',
+      location:    md.match(/^location:\s*(.+)$/m)?.[1]?.trim() || '',
+      description: md.match(/^description:\s*(.+)$/m)?.[1]?.trim() || '',
+      type:        md.match(/^type:\s*(.+)$/m)?.[1]?.trim() || 'messe',
+      animateur:   md.match(/^animateur:\s*(.+)$/m)?.[1]?.trim() || '',
+      chef_choeur: md.match(/^chef_choeur:\s*(.+)$/m)?.[1]?.trim() || '',
+    };
+    MASS_SLOTS.forEach(s => {
+      ev['program_' + s.key] = md.match(new RegExp(`^program_${s.key}:\\s*(.+)$`, 'm'))?.[1]?.trim() || '';
+    });
+    return ev;
   }));
   evts.sort((a, b) => a.date.localeCompare(b.date));
-  list.innerHTML = evts.length ? evts.map(ev => `
+  adminEvtsCache = evts;
+  list.innerHTML = evts.length ? evts.map((ev, idx) => `
     <div class="flex items-center justify-between px-6 py-3 hover:bg-stone-50">
       <div>
         <span class="font-medium text-stone-900">${ev.title}</span>
         <span class="ml-2 text-xs text-stone-400">${ev.date}${ev.time ? ' à ' + ev.time : ''} — ${ev.location}</span>
+        ${ev.type === 'messe' ? '<span class="ml-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600">Messe</span>' : ''}
       </div>
-      <button data-path="${ev.path}" data-sha="${ev.sha}" data-name="${ev.title}"
-        class="btn-del-evt ml-4 flex-shrink-0 text-xs font-medium text-red-400 hover:text-red-600">Supprimer</button>
+      <div class="ml-4 flex flex-shrink-0 items-center gap-3">
+        <button data-idx="${idx}" class="btn-mod-evt text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors">Modifier</button>
+        <button data-path="${ev.path}" data-sha="${ev.sha}" data-name="${ev.title}"
+          class="btn-del-evt text-xs font-medium text-red-400 hover:text-red-600 transition-colors">Supprimer</button>
+      </div>
     </div>`).join('') : '<p class="px-6 py-5 text-stone-400 italic">Aucun événement.</p>';
+
+  list.querySelectorAll('.btn-mod-evt').forEach(btn => {
+    btn.addEventListener('click', () => openEditEventModal(adminEvtsCache[parseInt(btn.dataset.idx)]));
+  });
   list.querySelectorAll('.btn-del-evt').forEach(btn => {
     btn.addEventListener('click', async () => {
       if (!confirm(`Supprimer définitivement "${btn.dataset.name}" ?`)) return;
@@ -513,19 +810,42 @@ async function loadEvents() {
   });
 }
 
-document.getElementById('form-add-event').addEventListener('submit', async e => {
+// ── Modale édition événement ───────────────────────────────────
+const editEvtModal = document.getElementById('modal-edit-event');
+
+function openEditEventModal(ev) {
+  document.getElementById('edit-evt-path').value = ev.path;
+  document.getElementById('edit-evt-sha').value  = ev.sha;
+  document.getElementById('edit-evt-title').value = ev.title;
+  document.getElementById('edit-evt-date').value  = ev.date;
+  document.getElementById('edit-evt-time').value  = ev.time;
+  document.getElementById('edit-evt-location').value = ev.location;
+  document.getElementById('edit-evt-description').value = ev.description;
+  document.querySelectorAll('input[name="edit-evt-type"]').forEach(r => r.checked = r.value === ev.type);
+  document.getElementById('edit-evt-animateur').value   = ev.animateur;
+  document.getElementById('edit-evt-chef-choeur').value = ev.chef_choeur;
+  const isMesse = ev.type === 'messe';
+  document.getElementById('edit-evt-program-section').classList.toggle('hidden', !isMesse);
+  if (isMesse) {
+    const prog = {};
+    MASS_SLOTS.forEach(s => { prog[s.key] = ev['program_' + s.key] || ''; });
+    buildProgramSlots(document.getElementById('edit-evt-program-slots'), prog);
+  }
+  document.getElementById('edit-evt-status').classList.add('hidden');
+  editEvtModal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeEditEventModal() {
+  editEvtModal.style.display = 'none';
+  document.body.style.overflow = '';
+}
+document.getElementById('btn-close-edit-event').addEventListener('click', closeEditEventModal);
+document.getElementById('btn-cancel-edit-event').addEventListener('click', closeEditEventModal);
+editEvtModal.addEventListener('click', e => { if (e.target === editEvtModal) closeEditEventModal(); });
+
+document.getElementById('form-edit-event').addEventListener('submit', e => {
   e.preventDefault();
-  const title = document.getElementById('evt-title').value.trim();
-  const date  = document.getElementById('evt-date').value;
-  const time  = document.getElementById('evt-time').value;
-  const loc   = document.getElementById('evt-location').value.trim();
-  const desc  = document.getElementById('evt-description').value.trim();
-  setStatus('evt-status', 'loading', 'Enregistrement en cours…');
-  try {
-    const md = ['---', `title: ${yamlStr(title)}`, `date: ${date}`, `time: "${time}"`, `location: ${yamlStr(loc)}`, `description: ${yamlStr(desc)}`, '---', ''].join('\n');
-    await ghPut(`src/content/events/${date}-${slugify(title)}.md`, b64encode(md), `ajout événement: ${title}`);
-    setStatus('evt-status', 'ok', '✓ Ajouté. Mise à jour du site dans ~2 min.'); e.target.reset(); loadEvents(); triggerRebuild();
-  } catch(err) { setStatus('evt-status', 'error', 'Erreur : ' + err.message); }
+  submitEvt(document.getElementById('edit-evt-path').value, document.getElementById('edit-evt-sha').value);
 });
 </script>
 </body>

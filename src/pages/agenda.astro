@@ -4,7 +4,16 @@ import Layout from '../layouts/Layout.astro';
 import SectionTitle from '../components/SectionTitle.astro';
 
 const events = await getCollection('events');
-const upcomingEvents = events.sort((a, b) => a.data.date.getTime() - b.data.date.getTime());
+const upcomingEvents = events
+  .sort((a, b) => a.data.date.getTime() - b.data.date.getTime())
+  .map(event => {
+    const prog: Record<string, string> = {};
+    ['accueil','kyrie','gloria','psaume','alleluia','priere_universelle','offertoire','sanctus','agnus','communion','action_grace','envoi','en_plus'].forEach(k => {
+      const v = (event.data as any)['program_' + k] as string | undefined;
+      if (v) prog[k] = v;
+    });
+    return { ...event, progJson: JSON.stringify(prog) };
+  });
 ---
 
 <Layout title="Agenda | Voix Lactée">
@@ -13,15 +22,19 @@ const upcomingEvents = events.sort((a, b) => a.data.date.getTime() - b.data.date
 
 	<div class="grid gap-4">
 		{upcomingEvents.map((event) => (
-			<article
-				class="event-card cursor-pointer rounded-xl border border-stone-200 bg-white p-5 shadow-sm transition hover:border-blue-300 hover:shadow-md"
-				data-id={event.id}
-				data-title={event.data.title}
-				data-date={event.data.date.toISOString().split('T')[0]}
-				data-time={event.data.time}
-				data-location={event.data.location}
-				data-description={event.data.description}
-			>
+		<article
+			class="event-card cursor-pointer rounded-xl border border-stone-200 bg-white p-5 shadow-sm transition hover:border-blue-300 hover:shadow-md"
+			data-id={event.id}
+			data-title={event.data.title}
+			data-date={event.data.date.toISOString().split('T')[0]}
+			data-time={event.data.time}
+			data-location={event.data.location}
+			data-description={event.data.description ?? ''}
+			data-type={event.data.type ?? ''}
+			data-animateur={event.data.animateur ?? ''}
+			data-chef-choeur={event.data.chef_choeur ?? ''}
+			data-program={event.progJson}
+		>
 				<h2 class="text-lg font-semibold text-blue-950">{event.data.title}</h2>
 				<p class="mt-2 text-sm text-stone-500">
 					{event.data.date.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} à {event.data.time} — {event.data.location}
@@ -30,10 +43,10 @@ const upcomingEvents = events.sort((a, b) => a.data.date.getTime() - b.data.date
 					<p class="mt-3 text-sm text-stone-700">{event.data.description}</p>
 				)}
 			</article>
-		))}
-		{upcomingEvents.length === 0 && (
-			<p class="text-sm italic text-stone-400">Aucun événement à venir.</p>
-		)}
+	))}
+	{upcomingEvents.length === 0 && (
+		<p class="text-sm italic text-stone-400">Aucun événement à venir.</p>
+	)}
 	</div>
 
 	<!-- Modale détail + inscription -->
@@ -54,6 +67,12 @@ const upcomingEvents = events.sort((a, b) => a.data.date.getTime() - b.data.date
 					<p id="detail-datetime" class="text-sm text-stone-500"></p>
 					<p id="detail-location" class="text-sm text-stone-500"></p>
 					<p id="detail-description" class="mt-3 text-stone-700"></p>
+					<div id="detail-team" class="mt-2 hidden flex-wrap gap-4 text-xs text-stone-500"></div>
+				</div>
+
+				<div id="detail-program-section" class="hidden">
+					<h3 class="mb-3 border-b border-stone-100 pb-1 text-base font-semibold text-stone-800">Programme</h3>
+					<div id="detail-program" class="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm"></div>
 				</div>
 
 				<div>
@@ -122,6 +141,13 @@ const upcomingEvents = events.sort((a, b) => a.data.date.getTime() - b.data.date
 		`).join('');
 	}
 
+	const SLOT_LABELS: Record<string, string> = {
+		accueil: 'Accueil', kyrie: 'Kyrie', gloria: 'Gloria', psaume: 'Psaume',
+		alleluia: 'Alléluia', priere_universelle: 'Prière universelle', offertoire: 'Offertoire',
+		sanctus: 'Sanctus', agnus: 'Agnus Dei', communion: 'Communion',
+		action_grace: 'Action de grâce', envoi: 'Envoi', en_plus: 'En plus',
+	};
+
 	function openDetail(card: HTMLElement) {
 		const id = card.dataset.id!;
 		currentDetailId = id;
@@ -131,6 +157,36 @@ const upcomingEvents = events.sort((a, b) => a.data.date.getTime() - b.data.date
 		const descEl = document.getElementById('detail-description')!;
 		descEl.textContent = card.dataset.description || '';
 		descEl.style.display = card.dataset.description ? 'block' : 'none';
+
+		// Équipe
+		const teamEl = document.getElementById('detail-team')!;
+		const anim = card.dataset.animateur || '';
+		const chef = card.dataset.chefChoeur || '';
+		if (anim || chef) {
+			teamEl.innerHTML = [
+				anim ? `<span>Animateur·ice : <strong>${anim}</strong></span>` : '',
+				chef ? `<span>Chef·fe de chœur : <strong>${chef}</strong></span>` : '',
+			].filter(Boolean).join('');
+			teamEl.style.display = 'flex';
+		} else { teamEl.style.display = 'none'; }
+
+		// Programme
+		const progSection = document.getElementById('detail-program-section')!;
+		const progEl = document.getElementById('detail-program')!;
+		let prog: Record<string, string> = {};
+		try { prog = JSON.parse(card.dataset.program || '{}'); } catch {}
+		const progEntries = Object.entries(prog).filter(([, v]) => v);
+		if (card.dataset.type === 'messe' && progEntries.length > 0) {
+			progEl.innerHTML = progEntries.map(([k, v]) =>
+				`<div class="flex items-center gap-1.5">
+					<span class="w-32 flex-shrink-0 text-xs font-medium text-stone-500">${SLOT_LABELS[k] ?? k}</span>
+					<a href="/${v}" target="_blank" rel="noopener"
+						class="truncate text-xs text-blue-700 underline-offset-2 hover:underline">Partition</a>
+				</div>`
+			).join('');
+			progSection.style.display = 'block';
+		} else { progSection.style.display = 'none'; }
+
 		renderSignupsList(id);
 		(document.getElementById('form-signup') as HTMLFormElement).reset();
 		document.getElementById('modal-detail')!.style.display = 'flex';
