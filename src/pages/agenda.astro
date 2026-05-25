@@ -55,6 +55,19 @@ const upcomingEvents = events
 
 	<div id="songs-data" data-map={JSON.stringify(songsByPdf)} hidden></div>
 
+	<!-- Visionneuse PDF -->
+	<div id="pdf-overlay" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/75 p-3" style="display: none;">
+		<div class="relative flex h-[95vh] w-[95vw] flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
+			<button id="btn-close-pdf" class="absolute right-4 top-4 z-10 flex items-center gap-2 rounded-lg bg-blue-900 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-blue-700">
+				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+					<path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+				</svg>
+				Fermer
+			</button>
+			<iframe id="pdf-frame" src="" class="h-full w-full border-0"></iframe>
+		</div>
+	</div>
+
 	<!-- Modale détail + inscription -->
 	<div id="modal-detail" class="fixed inset-0 z-50 items-center justify-center bg-black/50 p-4" style="display:none;">
 		<div class="relative w-full max-w-2xl rounded-xl bg-white shadow-xl" style="max-height:90vh;">
@@ -198,7 +211,7 @@ const upcomingEvents = events
 				return `<div class="flex items-center gap-1.5">
 					<span class="w-32 flex-shrink-0 text-xs font-medium text-stone-500">${SLOT_LABELS[k] ?? k}</span>
 					<span class="truncate text-xs text-stone-800">${songTitle}</span>
-					${v ? `<a href="/${v}" target="_blank" rel="noopener" class="flex-shrink-0 text-xs text-blue-600 hover:underline" title="Voir la partition">PDF</a>` : ''}
+					${v ? `<button class="agenda-pdf-btn flex-shrink-0 text-xs text-blue-600 hover:underline" data-url="/${v}" title="Voir la partition">PDF</button>` : ''}
 				</div>`;
 			}).join('');
 			progSection.style.display = 'block';
@@ -241,5 +254,22 @@ const upcomingEvents = events
 		saveSignups(currentDetailId, signups);
 		renderSignupsList(currentDetailId);
 		(document.getElementById('form-signup') as HTMLFormElement).reset();
+	});
+
+	// ── Visionneuse PDF ────────────────────────────────────────
+	const pdfOverlay = document.getElementById('pdf-overlay') as HTMLElement;
+	const pdfFrame   = document.getElementById('pdf-frame')   as HTMLIFrameElement;
+
+	function closePdf() { pdfOverlay.style.display = 'none'; pdfFrame.src = ''; }
+	document.getElementById('btn-close-pdf')!.addEventListener('click', closePdf);
+	pdfOverlay.addEventListener('click', (e) => { if (e.target === pdfOverlay) closePdf(); });
+
+	document.getElementById('modal-detail')!.addEventListener('click', (e) => {
+		const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('.agenda-pdf-btn');
+		if (btn) {
+			e.stopPropagation();
+			pdfFrame.src = btn.dataset.url!;
+			pdfOverlay.style.display = 'flex';
+		}
 	});
 </script>
