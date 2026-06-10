@@ -42,7 +42,7 @@ const upcomingEvents = events
 		>
 				<h2 class="text-lg font-semibold text-blue-950">{event.data.title}</h2>
 				<p class="mt-2 text-sm text-stone-500">
-					{event.data.date.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} à {event.data.time} — {event.data.location}
+					{event.data.date.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}{event.data.time ? ` à ${event.data.time}` : ''} — {event.data.location}
 				</p>
 				{event.data.description && (
 					<p class="mt-3 text-sm text-stone-700">{event.data.description}</p>
@@ -199,7 +199,7 @@ const upcomingEvents = events
 		const id = card.dataset.id!;
 		currentDetailId = id;
 		document.getElementById('detail-title')!.textContent = card.dataset.title!;
-		document.getElementById('detail-datetime')!.textContent = `${fmtDate(card.dataset.date!)} à ${card.dataset.time}`;
+		document.getElementById('detail-datetime')!.textContent = card.dataset.time ? `${fmtDate(card.dataset.date!)} à ${card.dataset.time}` : fmtDate(card.dataset.date!);
 		document.getElementById('detail-location')!.textContent = card.dataset.location!;
 		const descEl = document.getElementById('detail-description')!;
 		descEl.textContent = card.dataset.description || '';
