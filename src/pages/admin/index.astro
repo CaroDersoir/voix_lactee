@@ -13,9 +13,12 @@ const base = import.meta.env.DEV
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@200..700&display=swap" rel="stylesheet">
   <title>Administration — Voix Lactée</title>
 </head>
-<body class="bg-stone-50 text-stone-800" style="font-family: system-ui, sans-serif;">
+<body class="bg-stone-50 text-stone-800">
 
 <div id="screen-login" class="flex min-h-screen items-center justify-center p-4">
   <div class="w-full max-w-sm rounded-xl border border-stone-200 bg-white p-8 shadow-sm">
@@ -89,11 +92,8 @@ const base = import.meta.env.DEV
             </div>
           </div>
           <div>
-            <label class="mb-1 block text-sm font-medium text-stone-700">Type de chant <span class="text-red-500">*</span></label>
-            <select id="song-occasion" required
-              class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700">
-              <option value="">-- Choisir --</option>
-            </select>
+            <label class="mb-1 block text-sm font-medium text-stone-700">Type(s) de chant <span class="text-red-500">*</span></label>
+            <div id="song-occasions" class="max-h-40 overflow-y-auto rounded-lg border border-stone-300 px-3 py-2 space-y-1.5"></div>
           </div>
           <div>
             <label class="mb-1 block text-sm font-medium text-stone-700">Partition (PDF)</label>
@@ -101,27 +101,36 @@ const base = import.meta.env.DEV
               class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-700 file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-blue-50 file:px-3 file:py-1 file:text-sm file:font-medium file:text-blue-800 hover:file:bg-blue-100" />
           </div>
           <div>
-            <p class="mb-2 text-sm font-medium text-stone-700">Pistes audio (MP3)</p>
+            <p class="mb-1 text-sm font-medium text-stone-700">Pistes audio</p>
+            <p class="mb-2 text-xs text-stone-400">Lien YouTube / URL ou fichier MP3 (le fichier est prioritaire si les deux sont renseignés).</p>
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="mb-1 block text-xs text-stone-500">Soprano</label>
+                <input id="song-audio-s-url" type="url" placeholder="Lien YouTube ou URL audio"
+                  class="w-full rounded-lg border border-stone-300 px-2 py-1.5 text-xs text-stone-700 focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
                 <input id="song-audio-s" type="file" accept=".mp3,audio/*"
-                  class="w-full rounded-lg border border-stone-300 px-2 py-1.5 text-xs text-stone-700 file:mr-2 file:cursor-pointer file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-0.5 file:text-xs file:font-medium file:text-blue-800 hover:file:bg-blue-100" />
+                  class="mt-1 w-full rounded-lg border border-stone-300 px-2 py-1.5 text-xs text-stone-700 file:mr-2 file:cursor-pointer file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-0.5 file:text-xs file:font-medium file:text-blue-800 hover:file:bg-blue-100" />
               </div>
               <div>
                 <label class="mb-1 block text-xs text-stone-500">Alto</label>
+                <input id="song-audio-a-url" type="url" placeholder="Lien YouTube ou URL audio"
+                  class="w-full rounded-lg border border-stone-300 px-2 py-1.5 text-xs text-stone-700 focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
                 <input id="song-audio-a" type="file" accept=".mp3,audio/*"
-                  class="w-full rounded-lg border border-stone-300 px-2 py-1.5 text-xs text-stone-700 file:mr-2 file:cursor-pointer file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-0.5 file:text-xs file:font-medium file:text-blue-800 hover:file:bg-blue-100" />
+                  class="mt-1 w-full rounded-lg border border-stone-300 px-2 py-1.5 text-xs text-stone-700 file:mr-2 file:cursor-pointer file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-0.5 file:text-xs file:font-medium file:text-blue-800 hover:file:bg-blue-100" />
               </div>
               <div>
                 <label class="mb-1 block text-xs text-stone-500">Ténor</label>
+                <input id="song-audio-t-url" type="url" placeholder="Lien YouTube ou URL audio"
+                  class="w-full rounded-lg border border-stone-300 px-2 py-1.5 text-xs text-stone-700 focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
                 <input id="song-audio-t" type="file" accept=".mp3,audio/*"
-                  class="w-full rounded-lg border border-stone-300 px-2 py-1.5 text-xs text-stone-700 file:mr-2 file:cursor-pointer file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-0.5 file:text-xs file:font-medium file:text-blue-800 hover:file:bg-blue-100" />
+                  class="mt-1 w-full rounded-lg border border-stone-300 px-2 py-1.5 text-xs text-stone-700 file:mr-2 file:cursor-pointer file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-0.5 file:text-xs file:font-medium file:text-blue-800 hover:file:bg-blue-100" />
               </div>
               <div>
                 <label class="mb-1 block text-xs text-stone-500">Basse</label>
+                <input id="song-audio-b-url" type="url" placeholder="Lien YouTube ou URL audio"
+                  class="w-full rounded-lg border border-stone-300 px-2 py-1.5 text-xs text-stone-700 focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
                 <input id="song-audio-b" type="file" accept=".mp3,audio/*"
-                  class="w-full rounded-lg border border-stone-300 px-2 py-1.5 text-xs text-stone-700 file:mr-2 file:cursor-pointer file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-0.5 file:text-xs file:font-medium file:text-blue-800 hover:file:bg-blue-100" />
+                  class="mt-1 w-full rounded-lg border border-stone-300 px-2 py-1.5 text-xs text-stone-700 file:mr-2 file:cursor-pointer file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-0.5 file:text-xs file:font-medium file:text-blue-800 hover:file:bg-blue-100" />
               </div>
             </div>
           </div>
@@ -170,10 +179,18 @@ const base = import.meta.env.DEV
           </div>
           <div>
             <label class="mb-2 block text-sm font-medium text-stone-700">Type <span class="text-red-500">*</span></label>
-            <div class="flex gap-5">
+            <div class="flex flex-wrap gap-5">
               <label class="flex cursor-pointer items-center gap-2">
                 <input type="radio" name="evt-type" value="messe" checked class="accent-blue-700" />
                 <span class="text-sm text-stone-700">Messe</span>
+              </label>
+              <label class="flex cursor-pointer items-center gap-2">
+                <input type="radio" name="evt-type" value="messe_mariage" class="accent-blue-700" />
+                <span class="text-sm text-stone-700">Messe de mariage</span>
+              </label>
+              <label class="flex cursor-pointer items-center gap-2">
+                <input type="radio" name="evt-type" value="benediction" class="accent-blue-700" />
+                <span class="text-sm text-stone-700">Bénédiction</span>
               </label>
               <label class="flex cursor-pointer items-center gap-2">
                 <input type="radio" name="evt-type" value="autre" class="accent-blue-700" />
@@ -183,18 +200,18 @@ const base = import.meta.env.DEV
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="mb-1 block text-sm font-medium text-stone-700">Date <span class="text-red-500">*</span></label>
+              <label class="mb-1 block text-sm font-medium text-stone-700">Date</label>
               <input id="evt-date" type="date"
                 class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
             </div>
             <div>
-              <label class="mb-1 block text-sm font-medium text-stone-700">Heure <span class="text-red-500">*</span></label>
+              <label class="mb-1 block text-sm font-medium text-stone-700">Heure</label>
               <input id="evt-time" type="time"
                 class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
             </div>
           </div>
           <div>
-            <label class="mb-1 block text-sm font-medium text-stone-700">Lieu <span class="text-red-500">*</span></label>
+            <label class="mb-1 block text-sm font-medium text-stone-700">Lieu</label>
             <input id="evt-location" type="text"
               class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
           </div>
@@ -210,10 +227,15 @@ const base = import.meta.env.DEV
           </div>
         </div>
 
-        <!-- Étape 2 : Programme (messe) -->
+        <!-- Étape 2 : Programme -->
         <div id="evt-step-2" class="hidden space-y-3">
-          <p class="text-xs text-stone-400">Choisir un chant du répertoire ou importer un PDF. Tout est optionnel et modifiable après coup.</p>
-          <div id="evt-program-slots" class="space-y-2"></div>
+          <div id="evt-program-slots-wrapper">
+            <p class="mb-2 text-xs text-stone-400">Choisir un chant du répertoire ou importer un PDF. Tout est optionnel et modifiable après coup.</p>
+            <div id="evt-program-slots" class="space-y-2"></div>
+          </div>
+          <div id="evt-program-autre-wrapper" class="hidden">
+            <div id="evt-program-autre"></div>
+          </div>
           <div class="flex justify-between pt-2">
             <button id="evt-btn-back2" type="button"
               class="rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50">← Retour</button>
@@ -291,17 +313,48 @@ const base = import.meta.env.DEV
           </div>
         </div>
         <div>
-          <label class="mb-1 block text-sm font-medium text-stone-700">Type de chant <span class="text-red-500">*</span></label>
-          <select id="edit-occasion" required
-            class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700">
-            <option value="">-- Choisir --</option>
-          </select>
+          <label class="mb-1 block text-sm font-medium text-stone-700">Type(s) de chant <span class="text-red-500">*</span></label>
+          <div id="edit-occasions" class="max-h-40 overflow-y-auto rounded-lg border border-stone-300 px-3 py-2 space-y-1.5"></div>
         </div>
         <div>
           <label class="mb-1 block text-sm font-medium text-stone-700">Remplacer la partition (PDF)</label>
           <p id="edit-current-pdf" class="mb-1 text-xs text-stone-400"></p>
           <input id="edit-pdf" type="file" accept=".pdf"
             class="w-full rounded-lg border border-stone-200 px-3 py-1.5 text-sm text-stone-600 file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-blue-50 file:px-3 file:py-1 file:text-sm file:font-medium file:text-blue-800 hover:file:bg-blue-100" />
+        </div>
+        <div>
+          <p class="mb-1 text-sm font-medium text-stone-700">Pistes audio</p>
+          <p class="mb-2 text-xs text-stone-400">Lien YouTube / URL ou fichier MP3 (le fichier est prioritaire). Vider un champ URL supprime l'audio.</p>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="mb-1 block text-xs text-stone-500">Soprano</label>
+              <input id="edit-audio-s-url" type="url" placeholder="Lien YouTube ou URL audio"
+                class="w-full rounded-lg border border-stone-300 px-2 py-1.5 text-xs text-stone-700 focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
+              <input id="edit-audio-s" type="file" accept=".mp3,audio/*"
+                class="mt-1 w-full rounded-lg border border-stone-200 px-2 py-1.5 text-xs text-stone-600 file:mr-2 file:cursor-pointer file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-0.5 file:text-xs file:font-medium file:text-blue-800 hover:file:bg-blue-100" />
+            </div>
+            <div>
+              <label class="mb-1 block text-xs text-stone-500">Alto</label>
+              <input id="edit-audio-a-url" type="url" placeholder="Lien YouTube ou URL audio"
+                class="w-full rounded-lg border border-stone-300 px-2 py-1.5 text-xs text-stone-700 focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
+              <input id="edit-audio-a" type="file" accept=".mp3,audio/*"
+                class="mt-1 w-full rounded-lg border border-stone-200 px-2 py-1.5 text-xs text-stone-600 file:mr-2 file:cursor-pointer file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-0.5 file:text-xs file:font-medium file:text-blue-800 hover:file:bg-blue-100" />
+            </div>
+            <div>
+              <label class="mb-1 block text-xs text-stone-500">Ténor</label>
+              <input id="edit-audio-t-url" type="url" placeholder="Lien YouTube ou URL audio"
+                class="w-full rounded-lg border border-stone-300 px-2 py-1.5 text-xs text-stone-700 focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
+              <input id="edit-audio-t" type="file" accept=".mp3,audio/*"
+                class="mt-1 w-full rounded-lg border border-stone-200 px-2 py-1.5 text-xs text-stone-600 file:mr-2 file:cursor-pointer file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-0.5 file:text-xs file:font-medium file:text-blue-800 hover:file:bg-blue-100" />
+            </div>
+            <div>
+              <label class="mb-1 block text-xs text-stone-500">Basse</label>
+              <input id="edit-audio-b-url" type="url" placeholder="Lien YouTube ou URL audio"
+                class="w-full rounded-lg border border-stone-300 px-2 py-1.5 text-xs text-stone-700 focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
+              <input id="edit-audio-b" type="file" accept=".mp3,audio/*"
+                class="mt-1 w-full rounded-lg border border-stone-200 px-2 py-1.5 text-xs text-stone-600 file:mr-2 file:cursor-pointer file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-0.5 file:text-xs file:font-medium file:text-blue-800 hover:file:bg-blue-100" />
+            </div>
+          </div>
         </div>
         <div id="edit-status" class="hidden rounded-lg px-3 py-2 text-sm"></div>
       </form>
@@ -337,10 +390,18 @@ const base = import.meta.env.DEV
         </div>
         <div>
           <label class="mb-2 block text-sm font-medium text-stone-700">Type</label>
-          <div class="flex gap-5">
+          <div class="flex flex-wrap gap-5">
             <label class="flex cursor-pointer items-center gap-2">
               <input type="radio" name="edit-evt-type" value="messe" class="accent-blue-700" />
               <span class="text-sm text-stone-700">Messe</span>
+            </label>
+            <label class="flex cursor-pointer items-center gap-2">
+              <input type="radio" name="edit-evt-type" value="messe_mariage" class="accent-blue-700" />
+              <span class="text-sm text-stone-700">Messe de mariage</span>
+            </label>
+            <label class="flex cursor-pointer items-center gap-2">
+              <input type="radio" name="edit-evt-type" value="benediction" class="accent-blue-700" />
+              <span class="text-sm text-stone-700">Bénédiction</span>
             </label>
             <label class="flex cursor-pointer items-center gap-2">
               <input type="radio" name="edit-evt-type" value="autre" class="accent-blue-700" />
@@ -350,8 +411,8 @@ const base = import.meta.env.DEV
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="mb-1 block text-sm font-medium text-stone-700">Date <span class="text-red-500">*</span></label>
-            <input id="edit-evt-date" type="date" required
+            <label class="mb-1 block text-sm font-medium text-stone-700">Date</label>
+            <input id="edit-evt-date" type="date"
               class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
           </div>
           <div>
@@ -372,7 +433,12 @@ const base = import.meta.env.DEV
         </div>
         <div id="edit-evt-program-section">
           <h3 class="mb-2 border-t border-stone-100 pt-3 text-sm font-semibold text-stone-600">Programme</h3>
-          <div id="edit-evt-program-slots" class="space-y-2"></div>
+          <div id="edit-evt-program-slots-wrapper">
+            <div id="edit-evt-program-slots" class="space-y-2"></div>
+          </div>
+          <div id="edit-evt-program-autre-wrapper" class="hidden">
+            <div id="edit-evt-program-autre"></div>
+          </div>
         </div>
         <div class="grid grid-cols-3 gap-4 border-t border-stone-100 pt-3">
           <div>
@@ -403,6 +469,26 @@ const base = import.meta.env.DEV
   </div>
 </div>
 
+<!-- ── Modale : chercher un chant pour un slot ── -->
+<div id="modal-song-picker" class="fixed inset-0 z-50 items-center justify-center bg-black/50 p-4" style="display:none;">
+  <div class="flex w-full max-w-md flex-col rounded-xl bg-white shadow-xl" style="max-height:80vh;">
+    <div class="flex items-center justify-between border-b border-stone-200 px-5 py-4">
+      <h2 id="picker-title" class="text-base font-semibold text-blue-950">Choisir un chant</h2>
+      <button id="btn-close-picker" class="rounded-full p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-900 transition-colors" aria-label="Fermer">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+      </button>
+    </div>
+    <div class="border-b border-stone-100 px-4 py-3">
+      <input id="picker-search" type="search" placeholder="Rechercher un chant…"
+        class="w-full rounded-lg border border-stone-300 px-3 py-1.5 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
+    </div>
+    <div id="picker-list" class="flex-1 divide-y divide-stone-100 overflow-y-auto text-sm"></div>
+    <p id="picker-note" class="border-t border-stone-100 px-4 py-2 text-xs text-stone-400"></p>
+  </div>
+</div>
+
 <script is:inline define:vars={{ GH_TOKEN, NETLIFY_BUILD_HOOK }}>
 const OWNER  = 'CaroDersoir';
 async function triggerRebuild() { if (NETLIFY_BUILD_HOOK) fetch(NETLIFY_BUILD_HOOK, { method: 'POST' }); }
@@ -411,8 +497,9 @@ const BRANCH = 'main';
 const TOKEN  = GH_TOKEN;
 const CREDS  = { user: 'admin', pass: 'jcroispasnon' };
 const SESSION_KEY = 'vl_admin_ok';
-const OCCASION_OPTIONS = ['Accueil','Kyrie','Gloria','Psaume','Alléluia','Prière universelle','Offertoire','Sanctus','Agnus Dei','Communion','Action de grâce','Envoi','En plus','Autre'];
+const OCCASION_OPTIONS = ['Accueil','Kyrie','Gloria','Psaume','Alléluia','Prière universelle','Offertoire','Sanctus','Agnus Dei','Communion','Post-communion','Action de grâce','Chant à la Vierge',"Chant à l'Esprit Saint",'Envoi',"Procession d'entrée",'Bénédiction des alliances','Signature des registres','Sortie des mariés',"Entrée des mariés","Chant d'entrée",'Louange','Notre Père','Chant final','Chant de sortie','Autre'];
 const MASS_SLOTS = [
+  { key: 'esprit_saint',       label: "Chant à l'Esprit Saint", occasion: "Chant à l'Esprit Saint" },
   { key: 'accueil',            label: 'Accueil',            occasion: 'Accueil' },
   { key: 'kyrie',              label: 'Kyrie',              occasion: 'Kyrie' },
   { key: 'gloria',             label: 'Gloria',             occasion: 'Gloria' },
@@ -423,16 +510,97 @@ const MASS_SLOTS = [
   { key: 'sanctus',            label: 'Sanctus',            occasion: 'Sanctus' },
   { key: 'agnus',              label: 'Agnus Dei',          occasion: 'Agnus Dei' },
   { key: 'communion',          label: 'Communion',          occasion: 'Communion' },
+  { key: 'post_communion',     label: 'Post-communion',     occasion: 'Post-communion' },
   { key: 'action_grace',       label: 'Action de grâce',   occasion: 'Action de grâce' },
+  { key: 'vierge',             label: 'Chant à la Vierge', occasion: 'Chant à la Vierge' },
   { key: 'envoi',              label: 'Envoi',              occasion: 'Envoi' },
-  { key: 'en_plus',            label: 'En plus',            occasion: 'En plus' },
+  { key: 'en_plus',            label: 'En plus (1)',        occasion: 'En plus' },
+  { key: 'en_plus_2',          label: 'En plus (2)',        occasion: 'En plus' },
+  { key: 'en_plus_3',          label: 'En plus (3)',        occasion: 'En plus' },
 ];
-
-function buildOccasionSelect(selectEl, current) {
-  selectEl.innerHTML = '<option value="">-- Choisir --</option>' +
-    OCCASION_OPTIONS.map(o => `<option${o === current ? ' selected' : ''}>${o}</option>`).join('');
+const WEDDING_EXTRA_SLOTS = [
+  { key: 'procession_entree',     label: "Procession d'entrée",    occasion: "Procession d'entrée" },
+  { key: 'benediction_alliances', label: 'Bénédiction des alliances', occasion: 'Bénédiction des alliances' },
+  { key: 'signature_registres',   label: 'Signature des registres', occasion: 'Signature des registres' },
+  { key: 'sortie_maries',         label: 'Sortie des mariés',      occasion: 'Sortie des mariés' },
+];
+const WEDDING_SLOTS = [
+  { key: 'procession_entree',     label: "Procession d'entrée",    occasion: "Procession d'entrée" },
+  { key: 'esprit_saint',          label: "Chant à l'Esprit Saint", occasion: "Chant à l'Esprit Saint" },
+  { key: 'accueil',               label: 'Accueil',                occasion: 'Accueil' },
+  { key: 'kyrie',                 label: 'Kyrie',                  occasion: 'Kyrie' },
+  { key: 'gloria',                label: 'Gloria',                 occasion: 'Gloria' },
+  { key: 'psaume',                label: 'Psaume',                 occasion: 'Psaume' },
+  { key: 'alleluia',              label: 'Alléluia',               occasion: 'Alléluia' },
+  { key: 'benediction_alliances', label: 'Bénédiction des alliances', occasion: 'Bénédiction des alliances' },
+  { key: 'priere_universelle',    label: 'Prière universelle',     occasion: 'Prière universelle' },
+  { key: 'offertoire',            label: 'Offertoire',             occasion: 'Offertoire' },
+  { key: 'sanctus',               label: 'Sanctus',                occasion: 'Sanctus' },
+  { key: 'agnus',                 label: 'Agnus Dei',              occasion: 'Agnus Dei' },
+  { key: 'communion',             label: 'Communion',              occasion: 'Communion' },
+  { key: 'signature_registres',   label: 'Signature des registres', occasion: 'Signature des registres' },
+  { key: 'post_communion',        label: 'Post-communion',         occasion: 'Post-communion' },
+  { key: 'action_grace',          label: 'Action de grâce',        occasion: 'Action de grâce' },
+  { key: 'vierge',                label: 'Chant à la Vierge',      occasion: 'Chant à la Vierge' },
+  { key: 'envoi',                 label: 'Envoi',                  occasion: 'Envoi' },
+  { key: 'sortie_maries',         label: 'Sortie des mariés',      occasion: 'Sortie des mariés' },
+  { key: 'en_plus',               label: 'En plus',                occasion: 'En plus' },
+];
+const BENEDICTION_EXTRA_SLOTS = [
+  { key: 'entree_maries',  label: 'Entrée des mariés', occasion: "Entrée des mariés" },
+  { key: 'chant_entree',   label: "Chant d'entrée",    occasion: "Chant d'entrée" },
+  { key: 'louange',        label: 'Louange',            occasion: 'Louange' },
+  { key: 'notre_pere',     label: 'Notre Père',         occasion: 'Notre Père' },
+  { key: 'chant_final',    label: 'Chant final',        occasion: 'Chant final' },
+  { key: 'chant_sortie',   label: 'Chant de sortie',   occasion: 'Chant de sortie' },
+];
+const BENEDICTION_SLOTS = [
+  { key: 'entree_maries',         label: 'Entrée des mariés',        occasion: "Entrée des mariés" },
+  { key: 'chant_entree',          label: "Chant d'entrée",           occasion: "Chant d'entrée" },
+  { key: 'psaume',                label: 'Psaume',                   occasion: 'Psaume' },
+  { key: 'alleluia',              label: 'Alléluia',                 occasion: 'Alléluia' },
+  { key: 'esprit_saint',          label: "Chant à l'Esprit Saint",   occasion: "Chant à l'Esprit Saint" },
+  { key: 'benediction_alliances', label: 'Bénédiction des alliances', occasion: 'Bénédiction des alliances' },
+  { key: 'louange',               label: 'Louange',                  occasion: 'Louange' },
+  { key: 'priere_universelle',    label: 'Prière universelle',       occasion: 'Prière universelle' },
+  { key: 'notre_pere',            label: 'Notre Père',               occasion: 'Notre Père' },
+  { key: 'signature_registres',   label: 'Signature des registres',  occasion: 'Signature des registres' },
+  { key: 'vierge',                label: 'Chant à la Vierge',        occasion: 'Chant à la Vierge' },
+  { key: 'chant_final',           label: 'Chant final',              occasion: 'Chant final' },
+  { key: 'chant_sortie',          label: 'Chant de sortie',          occasion: 'Chant de sortie' },
+];
+function hasProgram(type) { return type === 'messe' || type === 'messe_mariage' || type === 'benediction'; }
+function slotsForType(type) { return type === 'messe_mariage' ? WEDDING_SLOTS : type === 'benediction' ? BENEDICTION_SLOTS : MASS_SLOTS; }
+function collectSlotValues(container) {
+  const prog = {};
+  container.querySelectorAll('.slot-select').forEach(sel => { if (sel.value && sel.value !== '__autre__') prog[sel.dataset.slot] = sel.value; });
+  return prog;
 }
-buildOccasionSelect(document.getElementById('song-occasion'), '');
+
+function parseOccasionStr(str) {
+  if (!str) return [];
+  str = str.trim();
+  if (str.startsWith('[') && str.endsWith(']'))
+    return str.slice(1, -1).split(',').map(s => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+  return [str.replace(/^["']|["']$/g, '')];
+}
+function formatOccasionYaml(arr) {
+  if (!arr || arr.length === 0) return '""';
+  if (arr.length === 1) return yamlStr(arr[0]);
+  return '[' + arr.map(o => yamlStr(o)).join(', ') + ']';
+}
+function buildOccasionCheckboxes(containerId, selected) {
+  const sel = Array.isArray(selected) ? selected : selected ? [selected] : [];
+  document.getElementById(containerId).innerHTML = OCCASION_OPTIONS.map(o => `
+    <label class="flex items-center gap-2 cursor-pointer select-none">
+      <input type="checkbox" value="${o}" ${sel.includes(o) ? 'checked' : ''} class="accent-blue-700 h-3.5 w-3.5" />
+      <span class="text-sm text-stone-700">${o}</span>
+    </label>`).join('');
+}
+function getCheckedOccasions(containerId) {
+  return [...document.querySelectorAll(`#${containerId} input[type=checkbox]:checked`)].map(cb => cb.value);
+}
+buildOccasionCheckboxes('song-occasions', []);
 
 function b64decode(str) {
   const binary = atob(str.replace(/\n/g, ''));
@@ -517,7 +685,7 @@ function applyAdminFilters() {
   let visible = 0;
   rows.forEach(row => {
     const titleMatch = row.dataset.title.includes(query);
-    const filterMatch = !adminActiveFilter || row.dataset.occasion === adminActiveFilter;
+    const filterMatch = !adminActiveFilter || (row.dataset.occasions || '').split(',').includes(adminActiveFilter);
     const show = titleMatch && filterMatch;
     row.style.display = show ? '' : 'none';
     if (show) visible++;
@@ -537,15 +705,19 @@ async function loadSongs() {
     return { path: f.path, sha: d.sha,
       title: md.match(/^title:\s*(.+)$/m)?.[1]?.trim().replace(/^"|"$/g, '') || f.name,
       key: md.match(/^key:\s*(.+)$/m)?.[1]?.trim() || '',
-      occasion: md.match(/^occasion:\s*(.+)$/m)?.[1]?.trim() || '',
+      occasions: parseOccasionStr(md.match(/^occasion:\s*(.+)$/m)?.[1]?.trim() || ''),
       pdf: md.match(/^pdf:\s*(.+)$/m)?.[1]?.trim() || '',
+      audio_soprano: md.match(/^audio_soprano:\s*(.+)$/m)?.[1]?.trim() || '',
+      audio_alto:    md.match(/^audio_alto:\s*(.+)$/m)?.[1]?.trim() || '',
+      audio_tenor:   md.match(/^audio_tenor:\s*(.+)$/m)?.[1]?.trim() || '',
+      audio_basse:   md.match(/^audio_basse:\s*(.+)$/m)?.[1]?.trim() || '',
       bodyContent: bodyParts.length >= 3 ? bodyParts.slice(2).join('---').trim() : '' };
   }));
   songs.sort((a, b) => a.title.localeCompare(b.title, 'fr'));
   adminSongsCache = songs;
 
   // Filtres par occasion
-  const occasions = [...new Set(songs.map(s => s.occasion).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr'));
+  const occasions = [...new Set(songs.flatMap(s => s.occasions).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr'));
   adminActiveFilter = '';
   const filtersEl = document.getElementById('admin-filters');
   filtersEl.innerHTML = ['', ...occasions].map((occ, i) => `
@@ -566,12 +738,12 @@ async function loadSongs() {
   });
 
   list.innerHTML = songs.length ? songs.map(s => `
-    <div data-song-row data-title="${s.title.toLowerCase()}" data-occasion="${s.occasion}"
+    <div data-song-row data-title="${s.title.toLowerCase()}" data-occasions="${s.occasions.join(',')}"
       class="flex items-center justify-between px-6 py-3 hover:bg-stone-50">
       <div class="flex flex-wrap items-center gap-2">
         <span class="font-medium text-stone-900">${s.title}</span>
         ${s.key ? `<span class="text-xs text-stone-400">${s.key}</span>` : ''}
-        ${s.occasion ? `<span class="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-500">${s.occasion}</span>` : ''}
+        ${s.occasions.map(o => `<span class="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-500">${o}</span>`).join('')}
       </div>
       <div class="ml-4 flex flex-shrink-0 items-center gap-3">
         <button data-idx="${songs.indexOf(s)}"
@@ -601,8 +773,29 @@ document.getElementById('form-add-song').addEventListener('submit', async e => {
   e.preventDefault();
   const title = document.getElementById('song-title').value.trim();
   const key = document.getElementById('song-key').value.trim();
-  const occasion = document.getElementById('song-occasion').value.trim();
+  const occasions = getCheckedOccasions('song-occasions');
   const pdfFile = document.getElementById('song-pdf').files[0];
+  if (!occasions.length) { setStatus('song-status', 'error', 'Veuillez choisir au moins un type de chant.'); return; }
+  const normalTitle = t => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+  const duplicate = adminSongsCache.find(s => normalTitle(s.title) === normalTitle(title));
+  if (duplicate) {
+    const newOccs = occasions.filter(o => !duplicate.occasions.includes(o));
+    if (!newOccs.length) { setStatus('song-status', 'error', `« ${duplicate.title} » existe déjà avec ces occasions.`); return; }
+    const msg = `« ${duplicate.title} » existe déjà (${duplicate.occasions.join(', ')}). Ajouter l'occasion « ${newOccs.join(', ')} » à ce chant ?`;
+    if (confirm(msg)) {
+      setStatus('song-status', 'loading', 'Mise à jour des occasions…');
+      try {
+        const d = await ghGet(`contents/${duplicate.path}`);
+        const md = b64decode(d.content);
+        const merged = [...new Set([...duplicate.occasions, ...newOccs])];
+        const newMd = md.replace(/^occasion:\s*.+$/m, `occasion: ${formatOccasionYaml(merged)}`);
+        await ghPut(duplicate.path, b64encode(newMd), `tag: ${duplicate.title} +${newOccs.join(', ')}`, d.sha);
+        setStatus('song-status', 'ok', `✓ Occasions mises à jour. Mise à jour dans ~2 min.`);
+        e.target.reset(); buildOccasionCheckboxes('song-occasions', []); loadSongs(); triggerRebuild();
+      } catch(err) { setStatus('song-status', 'error', 'Erreur : ' + err.message); }
+      return;
+    }
+  }
   setStatus('song-status', 'loading', 'Enregistrement en cours…');
   try {
     const slug = slugify(title);
@@ -612,29 +805,33 @@ document.getElementById('form-add-song').addEventListener('submit', async e => {
       pdfPath = `uploads/${slug}.pdf`;
     }
     const audioVoices = [
-      { id: 'song-audio-s', field: 'audio_soprano', suffix: '-soprano' },
-      { id: 'song-audio-a', field: 'audio_alto',    suffix: '-alto'    },
-      { id: 'song-audio-t', field: 'audio_tenor',   suffix: '-tenor'   },
-      { id: 'song-audio-b', field: 'audio_basse',   suffix: '-basse'   },
+      { id: 'song-audio-s', urlId: 'song-audio-s-url', field: 'audio_soprano', suffix: '-soprano' },
+      { id: 'song-audio-a', urlId: 'song-audio-a-url', field: 'audio_alto',    suffix: '-alto'    },
+      { id: 'song-audio-t', urlId: 'song-audio-t-url', field: 'audio_tenor',   suffix: '-tenor'   },
+      { id: 'song-audio-b', urlId: 'song-audio-b-url', field: 'audio_basse',   suffix: '-basse'   },
     ];
     const audioPaths = {};
     for (const v of audioVoices) {
       const file = document.getElementById(v.id).files?.[0];
+      const url = document.getElementById(v.urlId).value.trim();
       if (file) {
         const ext = file.name.split('.').pop() || 'mp3';
         await ghPut(`public/uploads/${slug}${v.suffix}.${ext}`, await fileToBase64(file), `ajout audio ${v.field}: ${title}`);
         audioPaths[v.field] = `uploads/${slug}${v.suffix}.${ext}`;
+      } else if (url) {
+        audioPaths[v.field] = url;
       }
     }
-    const mdLines = ['---', `title: ${yamlStr(title)}`, key ? `key: ${yamlStr(key)}` : null, `occasion: ${yamlStr(occasion)}`,
+    const mdLines = ['---', `title: ${yamlStr(title)}`, key ? `key: ${yamlStr(key)}` : null,
+      `occasion: ${formatOccasionYaml(occasions)}`,
       pdfPath ? `pdf: ${pdfPath}` : null,
-      audioPaths.audio_soprano ? `audio_soprano: ${audioPaths.audio_soprano}` : null,
-      audioPaths.audio_alto    ? `audio_alto: ${audioPaths.audio_alto}`       : null,
-      audioPaths.audio_tenor   ? `audio_tenor: ${audioPaths.audio_tenor}`     : null,
-      audioPaths.audio_basse   ? `audio_basse: ${audioPaths.audio_basse}`     : null,
+      audioPaths.audio_soprano ? `audio_soprano: ${yamlStr(audioPaths.audio_soprano)}` : null,
+      audioPaths.audio_alto    ? `audio_alto: ${yamlStr(audioPaths.audio_alto)}`       : null,
+      audioPaths.audio_tenor   ? `audio_tenor: ${yamlStr(audioPaths.audio_tenor)}`     : null,
+      audioPaths.audio_basse   ? `audio_basse: ${yamlStr(audioPaths.audio_basse)}`     : null,
       '---', ''].filter(l => l !== null).join('\n');
     await ghPut(`src/content/songs/${slug}.md`, b64encode(mdLines), `ajout chant: ${title}`);
-    setStatus('song-status', 'ok', '✓ Ajouté. Mise à jour du site dans ~2 min.'); e.target.reset(); loadSongs(); triggerRebuild();
+    setStatus('song-status', 'ok', '✓ Ajouté. Mise à jour du site dans ~2 min.'); e.target.reset(); buildOccasionCheckboxes('song-occasions', []); loadSongs(); triggerRebuild();
   } catch(err) { setStatus('song-status', 'error', 'Erreur : ' + err.message); }
 });
 
@@ -649,10 +846,15 @@ function openEditModal(song) {
   document.getElementById('edit-body-content').value = song.bodyContent || '';
   document.getElementById('edit-title').value = song.title;
   document.getElementById('edit-key').value = song.key;
-  buildOccasionSelect(document.getElementById('edit-occasion'), song.occasion);
+  buildOccasionCheckboxes('edit-occasions', song.occasions);
   document.getElementById('edit-current-pdf').textContent =
     song.pdf ? `Partition actuelle : ${song.pdf.split('/').pop()}` : 'Aucune partition enregistrée.';
   document.getElementById('edit-pdf').value = '';
+  document.getElementById('edit-audio-s-url').value = song.audio_soprano || '';
+  document.getElementById('edit-audio-a-url').value = song.audio_alto || '';
+  document.getElementById('edit-audio-t-url').value = song.audio_tenor || '';
+  document.getElementById('edit-audio-b-url').value = song.audio_basse || '';
+  ['edit-audio-s','edit-audio-a','edit-audio-t','edit-audio-b'].forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('edit-status').classList.add('hidden');
   editModal.style.display = 'flex';
   document.body.style.overflow = 'hidden';
@@ -671,10 +873,10 @@ document.getElementById('form-edit-song').addEventListener('submit', async e => 
   const sha         = document.getElementById('edit-sha').value;
   const title       = document.getElementById('edit-title').value.trim();
   const key         = document.getElementById('edit-key').value.trim();
-  const occasion    = document.getElementById('edit-occasion').value;
+  const occasions   = getCheckedOccasions('edit-occasions');
   const pdfFile     = document.getElementById('edit-pdf').files[0];
   const bodyContent = document.getElementById('edit-body-content').value;
-  if (!title || !occasion) return;
+  if (!title || !occasions.length) { setStatus('edit-status', 'error', 'Titre et au moins un type obligatoires.'); return; }
   setStatus('edit-status', 'loading', 'Enregistrement en cours…');
   try {
     let pdfPath = currentEditSong.pdf || '';
@@ -682,9 +884,31 @@ document.getElementById('form-edit-song').addEventListener('submit', async e => 
       await ghPut(`public/uploads/${slugify(title)}.pdf`, await fileToBase64(pdfFile), `partition: ${title}`);
       pdfPath = `uploads/${slugify(title)}.pdf`;
     }
+    const editAudioVoices = [
+      { fileId: 'edit-audio-s', urlId: 'edit-audio-s-url', field: 'audio_soprano', suffix: '-soprano' },
+      { fileId: 'edit-audio-a', urlId: 'edit-audio-a-url', field: 'audio_alto',    suffix: '-alto'    },
+      { fileId: 'edit-audio-t', urlId: 'edit-audio-t-url', field: 'audio_tenor',   suffix: '-tenor'   },
+      { fileId: 'edit-audio-b', urlId: 'edit-audio-b-url', field: 'audio_basse',   suffix: '-basse'   },
+    ];
+    const audioFields = {};
+    for (const v of editAudioVoices) {
+      const file = document.getElementById(v.fileId).files?.[0];
+      const urlVal = document.getElementById(v.urlId).value.trim();
+      if (file) {
+        const ext = file.name.split('.').pop() || 'mp3';
+        await ghPut(`public/uploads/${slugify(title)}${v.suffix}.${ext}`, await fileToBase64(file), `audio ${v.field}: ${title}`);
+        audioFields[v.field] = `uploads/${slugify(title)}${v.suffix}.${ext}`;
+      } else {
+        audioFields[v.field] = urlVal;
+      }
+    }
     const md = ['---', `title: ${yamlStr(title)}`, key ? `key: ${yamlStr(key)}` : null,
-      `occasion: ${yamlStr(occasion)}`, pdfPath ? `pdf: ${pdfPath}` : null, '---',
-      bodyContent || ''].filter(l => l !== null).join('\n');
+      `occasion: ${formatOccasionYaml(occasions)}`, pdfPath ? `pdf: ${pdfPath}` : null,
+      audioFields.audio_soprano ? `audio_soprano: ${yamlStr(audioFields.audio_soprano)}` : null,
+      audioFields.audio_alto    ? `audio_alto: ${yamlStr(audioFields.audio_alto)}`       : null,
+      audioFields.audio_tenor   ? `audio_tenor: ${yamlStr(audioFields.audio_tenor)}`     : null,
+      audioFields.audio_basse   ? `audio_basse: ${yamlStr(audioFields.audio_basse)}`     : null,
+      '---', bodyContent || ''].filter(l => l !== null).join('\n');
     await ghPut(path, b64encode(md), `modif chant: ${title}`, sha);
     setStatus('edit-status', 'ok', '✓ Modifié. Mise à jour dans ~2 min.');
     setTimeout(() => { closeEditModal(); loadSongs(); triggerRebuild(); }, 1200);
@@ -694,15 +918,18 @@ document.getElementById('form-edit-song').addEventListener('submit', async e => 
 // ── Événements ────────────────────────────────────────────────
 let adminEvtsCache = [];
 
-function buildProgramSlots(container, currentProgram) {
-  container.innerHTML = MASS_SLOTS.map(slot => {
-    const songs = adminSongsCache.filter(s => (slot.key === 'en_plus' || s.occasion === slot.occasion) && s.pdf);
+function buildProgramSlots(container, currentProgram, type) {
+  const slots = slotsForType(type || 'messe');
+  container.innerHTML = slots.map(slot => {
+    const isEnPlus = slot.key === 'en_plus' || slot.key === 'en_plus_2' || slot.key === 'en_plus_3';
+    const songs = adminSongsCache.filter(s => (isEnPlus || s.occasions.includes(slot.occasion)) && s.pdf).sort((a, b) => a.title.localeCompare(b.title, 'fr'));
     const cur = (currentProgram || {})[slot.key] || '';
     const opts = songs.map(s => `<option value="${s.pdf}"${s.pdf === cur ? ' selected' : ''}>${s.title}</option>`).join('');
     return `<div class="flex items-center gap-2">
       <span class="w-36 flex-shrink-0 text-xs font-medium text-stone-600">${slot.label}</span>
-      <select class="slot-select flex-1 rounded-lg border border-stone-300 px-2 py-1.5 text-xs focus:border-blue-700 focus:outline-none" data-slot="${slot.key}">
+      <select class="slot-select flex-1 rounded-lg border border-stone-300 px-2 py-1.5 text-xs focus:border-blue-700 focus:outline-none" data-slot="${slot.key}" data-occasion="${slot.occasion}" data-label="${slot.label}">
         <option value="">-- Aucun --</option>${opts}
+        <option value="__autre__">⊕ Chercher un autre chant…</option>
       </select>
       <label class="flex-shrink-0 cursor-pointer rounded border border-stone-300 px-2 py-1 text-xs text-stone-500 hover:border-blue-600 hover:text-blue-700 transition-colors">
         Importer
@@ -718,6 +945,34 @@ function buildProgramSlots(container, currentProgram) {
       const title = prompt(`Titre du chant (${input.dataset.label}) :`, file.name.replace(/\.pdf$/i, ''));
       if (!title) { input.value = ''; return; }
       const statusEl = container.querySelector(`.slot-status[data-slot="${input.dataset.slot}"]`);
+      const normalTitle = t => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+      const duplicate = adminSongsCache.find(s => normalTitle(s.title) === normalTitle(title));
+      if (duplicate) {
+        const alreadyHasOcc = duplicate.occasions.includes(input.dataset.occasion);
+        const msg = alreadyHasOcc
+          ? `« ${duplicate.title} » existe déjà dans le répertoire avec l'occasion « ${input.dataset.occasion} ». Utiliser ce chant existant ?`
+          : `« ${duplicate.title} » existe déjà (${duplicate.occasions.join(', ')}). Ajouter l'occasion « ${input.dataset.occasion} » et utiliser ce chant existant ?`;
+        if (confirm(msg)) {
+          statusEl.textContent = '…';
+          try {
+            if (!alreadyHasOcc) {
+              const d = await ghGet(`contents/${duplicate.path}`);
+              const md = b64decode(d.content);
+              const merged = [...new Set([...duplicate.occasions, input.dataset.occasion])];
+              const newMd = md.replace(/^occasion:\s*.+$/m, `occasion: ${formatOccasionYaml(merged)}`);
+              await ghPut(duplicate.path, b64encode(newMd), `tag: ${duplicate.title} +${input.dataset.occasion}`, d.sha);
+            }
+            const sel = container.querySelector(`.slot-select[data-slot="${input.dataset.slot}"]`);
+            const existing = sel.querySelector(`option[value="${duplicate.pdf}"]`);
+            if (existing) { existing.selected = true; }
+            else if (duplicate.pdf) { sel.appendChild(new Option(duplicate.title, duplicate.pdf, true, true)); }
+            statusEl.textContent = '✓';
+            loadSongs(); if (!alreadyHasOcc) triggerRebuild();
+          } catch { statusEl.textContent = '✗'; }
+          input.value = '';
+          return;
+        }
+      }
       statusEl.textContent = '…';
       try {
         const pdfPath = `uploads/${slugify(title)}.pdf`;
@@ -728,8 +983,17 @@ function buildProgramSlots(container, currentProgram) {
         const opt = new Option(title, pdfPath, true, true);
         sel.appendChild(opt);
         statusEl.textContent = '✓';
-        loadSongs();
+        loadSongs(); triggerRebuild();
       } catch { statusEl.textContent = '✗'; }
+    });
+  });
+
+  container.querySelectorAll('.slot-select').forEach(sel => {
+    sel.addEventListener('change', () => {
+      if (sel.value === '__autre__') {
+        sel.value = '';
+        openSongPicker(sel.dataset.slot, sel.dataset.occasion, sel.dataset.label, container);
+      }
     });
   });
 }
@@ -739,9 +1003,8 @@ let evtStep = 1;
 function showEvtStep(n) {
   evtStep = n;
   [1, 2, 3].forEach(i => document.getElementById('evt-step-' + i).classList.toggle('hidden', i !== n));
-  const isMesse = document.querySelector('input[name="evt-type"]:checked')?.value === 'messe';
-  document.getElementById('evt-ind-sep1').classList.toggle('hidden', n < 2 || !isMesse);
-  document.getElementById('evt-ind-2').classList.toggle('hidden', n < 2 || !isMesse);
+  document.getElementById('evt-ind-sep1').classList.toggle('hidden', n < 2);
+  document.getElementById('evt-ind-2').classList.toggle('hidden', n < 2);
   document.getElementById('evt-ind-sep2').classList.toggle('hidden', n < 3);
   document.getElementById('evt-ind-3').classList.toggle('hidden', n < 3);
   ['evt-ind-1','evt-ind-2','evt-ind-3'].forEach((id, i) => {
@@ -755,25 +1018,27 @@ document.getElementById('evt-btn-next1').addEventListener('click', () => {
   const date  = document.getElementById('evt-date').value;
   const time  = document.getElementById('evt-time').value;
   const loc   = document.getElementById('evt-location').value.trim();
-  if (!title || !date || !time || !loc) {
-    setStatus('evt-status-1', 'error', 'Veuillez remplir les champs obligatoires.');
+  if (!title) {
+    setStatus('evt-status-1', 'error', 'Le titre est obligatoire.');
     return;
   }
   document.getElementById('evt-status-1').classList.add('hidden');
-  const isMesse = document.querySelector('input[name="evt-type"]:checked')?.value === 'messe';
-  if (isMesse) {
-    buildProgramSlots(document.getElementById('evt-program-slots'), {});
-    showEvtStep(2);
+  const type = document.querySelector('input[name="evt-type"]:checked')?.value;
+  if (type === 'autre') {
+    document.getElementById('evt-program-slots-wrapper').classList.add('hidden');
+    document.getElementById('evt-program-autre-wrapper').classList.remove('hidden');
+    buildAutreSlots(document.getElementById('evt-program-autre'), getAutreSlots(document.getElementById('evt-program-autre')));
   } else {
-    showEvtStep(3);
+    document.getElementById('evt-program-slots-wrapper').classList.remove('hidden');
+    document.getElementById('evt-program-autre-wrapper').classList.add('hidden');
+    const existingProg = collectSlotValues(document.getElementById('evt-program-slots'));
+    buildProgramSlots(document.getElementById('evt-program-slots'), existingProg, type);
   }
+  showEvtStep(2);
 });
 document.getElementById('evt-btn-back2').addEventListener('click', () => showEvtStep(1));
 document.getElementById('evt-btn-next2').addEventListener('click', () => showEvtStep(3));
-document.getElementById('evt-btn-back3').addEventListener('click', () => {
-  const isMesse = document.querySelector('input[name="evt-type"]:checked')?.value === 'messe';
-  showEvtStep(isMesse ? 2 : 1);
-});
+document.getElementById('evt-btn-back3').addEventListener('click', () => showEvtStep(2));
 document.getElementById('evt-btn-submit').addEventListener('click', submitEvt);
 
 async function submitEvt(editPath, editSha) {
@@ -788,21 +1053,32 @@ async function submitEvt(editPath, editSha) {
   const chef  = document.getElementById(isEdit ? 'edit-evt-chef-choeur': 'evt-chef-choeur').value.trim();
   const org   = document.getElementById(isEdit ? 'edit-evt-organiste'  : 'evt-organiste').value.trim();
   const statusId = isEdit ? 'edit-evt-status' : 'evt-status';
-  if (!title || !date) { setStatus(statusId, 'error', 'Titre et date obligatoires.'); return; }
+  if (!title) { setStatus(statusId, 'error', 'Le titre est obligatoire.'); return; }
   setStatus(statusId, 'loading', 'Enregistrement en cours…');
   try {
-    const lines = ['---', `title: ${yamlStr(title)}`, `date: ${date}`, `time: "${time}"`, `location: ${yamlStr(loc)}`];
+    const lines = ['---', `title: ${yamlStr(title)}`];
+    if (date) lines.push(`date: ${date}`);
+    if (time) lines.push(`time: "${time}"`);
+    if (loc)  lines.push(`location: ${yamlStr(loc)}`);
     if (desc) lines.push(`description: ${yamlStr(desc)}`);
     lines.push(`type: ${type}`);
     if (anim) lines.push(`animateur: ${yamlStr(anim)}`);
     if (chef) lines.push(`chef_choeur: ${yamlStr(chef)}`);
     if (org)  lines.push(`organiste: ${yamlStr(org)}`);
-    const slotsContainer = document.getElementById(isEdit ? 'edit-evt-program-slots' : 'evt-program-slots');
-    slotsContainer?.querySelectorAll('.slot-select').forEach(sel => {
-      if (sel.value) lines.push(`program_${sel.dataset.slot}: ${sel.value}`);
-    });
+    if (type === 'autre') {
+      const autreContainer = document.getElementById(isEdit ? 'edit-evt-program-autre' : 'evt-program-autre');
+      getAutreSlots(autreContainer).forEach((e, i) => {
+        if (e.label) lines.push(`program_autre_${i}_label: ${yamlStr(e.label)}`);
+        if (e.pdf)   lines.push(`program_autre_${i}_pdf: ${e.pdf}`);
+      });
+    } else {
+      const slotsContainer = document.getElementById(isEdit ? 'edit-evt-program-slots' : 'evt-program-slots');
+      slotsContainer?.querySelectorAll('.slot-select').forEach(sel => {
+        if (sel.value && sel.value !== '__autre__') lines.push(`program_${sel.dataset.slot}: ${sel.value}`);
+      });
+    }
     lines.push('---', '');
-    const filePath = isEdit ? editPath : `src/content/events/${date}-${slugify(title)}.md`;
+    const filePath = isEdit ? editPath : `src/content/events/${(date || new Date().toISOString().slice(0,10))}-${slugify(title)}.md`;
     await ghPut(filePath, b64encode(lines.join('\n')), `${isEdit ? 'modif' : 'ajout'} événement: ${title}`, isEdit ? editSha : undefined);
     setStatus(statusId, 'ok', `✓ ${isEdit ? 'Modifié' : 'Ajouté'}. Mise à jour dans ~2 min.`);
     setTimeout(() => {
@@ -836,9 +1112,17 @@ async function loadEvents() {
       chef_choeur: md.match(/^chef_choeur:\s*(.+)$/m)?.[1]?.trim() || '',
       organiste:   md.match(/^organiste:\s*(.+)$/m)?.[1]?.trim() || '',
     };
-    MASS_SLOTS.forEach(s => {
+    [...MASS_SLOTS, ...WEDDING_EXTRA_SLOTS, ...BENEDICTION_EXTRA_SLOTS].forEach(s => {
       ev['program_' + s.key] = md.match(new RegExp(`^program_${s.key}:\\s*(.+)$`, 'm'))?.[1]?.trim() || '';
     });
+    const autreEntries = [];
+    for (let i = 0; i < 30; i++) {
+      const lbl = md.match(new RegExp(`^program_autre_${i}_label:\\s*(.+)$`, 'm'))?.[1]?.trim() || '';
+      const pdf = md.match(new RegExp(`^program_autre_${i}_pdf:\\s*(.+)$`, 'm'))?.[1]?.trim() || '';
+      if (!lbl && !pdf) break;
+      autreEntries.push({ label: lbl, pdf });
+    }
+    ev.programAutre = autreEntries;
     return ev;
   }));
   evts.sort((a, b) => a.date.localeCompare(b.date));
@@ -848,7 +1132,7 @@ async function loadEvents() {
       <div>
         <span class="font-medium text-stone-900">${ev.title}</span>
         <span class="ml-2 text-xs text-stone-400">${ev.date}${ev.time ? ' à ' + ev.time : ''} — ${ev.location}</span>
-        ${ev.type === 'messe' ? '<span class="ml-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600">Messe</span>' : ''}
+        ${ev.type === 'messe' ? '<span class="ml-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600">Messe</span>' : ev.type === 'messe_mariage' ? '<span class="ml-1 rounded-full bg-pink-50 px-2 py-0.5 text-xs text-pink-600">Messe mariage</span>' : ev.type === 'benediction' ? '<span class="ml-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-600">Bénédiction</span>' : ''}
       </div>
       <div class="ml-4 flex flex-shrink-0 items-center gap-3">
         <button data-idx="${idx}" class="btn-mod-evt text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors">Modifier</button>
@@ -885,12 +1169,17 @@ function openEditEventModal(ev) {
   document.getElementById('edit-evt-animateur').value   = ev.animateur;
   document.getElementById('edit-evt-chef-choeur').value = ev.chef_choeur;
   document.getElementById('edit-evt-organiste').value   = ev.organiste;
-  const isMesse = ev.type === 'messe';
-  document.getElementById('edit-evt-program-section').classList.toggle('hidden', !isMesse);
-  if (isMesse) {
+  document.getElementById('edit-evt-program-section').classList.remove('hidden');
+  if (ev.type === 'autre') {
+    document.getElementById('edit-evt-program-slots-wrapper').classList.add('hidden');
+    document.getElementById('edit-evt-program-autre-wrapper').classList.remove('hidden');
+    buildAutreSlots(document.getElementById('edit-evt-program-autre'), ev.programAutre || []);
+  } else {
+    document.getElementById('edit-evt-program-slots-wrapper').classList.remove('hidden');
+    document.getElementById('edit-evt-program-autre-wrapper').classList.add('hidden');
     const prog = {};
-    MASS_SLOTS.forEach(s => { prog[s.key] = ev['program_' + s.key] || ''; });
-    buildProgramSlots(document.getElementById('edit-evt-program-slots'), prog);
+    slotsForType(ev.type).forEach(s => { prog[s.key] = ev['program_' + s.key] || ''; });
+    buildProgramSlots(document.getElementById('edit-evt-program-slots'), prog, ev.type);
   }
   document.getElementById('edit-evt-status').classList.add('hidden');
   editEvtModal.style.display = 'flex';
@@ -904,10 +1193,160 @@ document.getElementById('btn-close-edit-event').addEventListener('click', closeE
 document.getElementById('btn-cancel-edit-event').addEventListener('click', closeEditEventModal);
 editEvtModal.addEventListener('click', e => { if (e.target === editEvtModal) closeEditEventModal(); });
 
+document.querySelectorAll('input[name="edit-evt-type"]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    const type = radio.value;
+    const section = document.getElementById('edit-evt-program-section');
+    section.classList.toggle('hidden', !hasProgram(type));
+    if (hasProgram(type)) {
+      const currentProg = collectSlotValues(document.getElementById('edit-evt-program-slots'));
+      buildProgramSlots(document.getElementById('edit-evt-program-slots'), currentProg, type);
+    }
+  });
+});
+
 document.getElementById('form-edit-event').addEventListener('submit', e => {
   e.preventDefault();
   submitEvt(document.getElementById('edit-evt-path').value, document.getElementById('edit-evt-sha').value);
 });
+
+// ── Programme libre (type "autre") ────────────────────────────
+let autreSlotCounter = 0;
+
+function buildAutreSlots(container, entries) {
+  container.innerHTML = `
+    <p class="mb-2 text-xs text-stone-400">Ajoutez les chants dans l'ordre. Le libellé est libre (ex. : "Ouverture", "Méditation", "Final").</p>
+    <div class="autre-entries space-y-2"></div>
+    <button type="button" class="btn-add-autre mt-2 w-full rounded-lg border border-dashed border-stone-300 px-3 py-1.5 text-xs text-stone-500 hover:border-blue-600 hover:text-blue-700 transition-colors">
+      + Ajouter un chant
+    </button>`;
+  const entriesEl = container.querySelector('.autre-entries');
+
+  function addAutreEntry(label, pdf) {
+    const slotKey = `autre-${autreSlotCounter++}`;
+    const allSongs = adminSongsCache.filter(s => s.pdf).sort((a, b) => a.title.localeCompare(b.title, 'fr'));
+    const opts = allSongs.map(s => `<option value="${s.pdf}"${s.pdf === pdf ? ' selected' : ''}>${s.title}</option>`).join('');
+    const row = document.createElement('div');
+    row.className = 'autre-entry flex items-center gap-2';
+    row.innerHTML = `
+      <input type="text" value="${(label || '').replace(/"/g, '&quot;')}" placeholder="Libellé (ex. : Ouverture)"
+        class="autre-label w-36 flex-shrink-0 rounded-lg border border-stone-300 px-2 py-1.5 text-xs focus:border-blue-700 focus:outline-none" />
+      <select class="slot-select flex-1 rounded-lg border border-stone-300 px-2 py-1.5 text-xs focus:border-blue-700 focus:outline-none"
+        data-slot="${slotKey}" data-occasion="" data-label="">
+        <option value="">-- Aucun chant --</option>${opts}
+        <option value="__autre__">⊕ Chercher un autre chant…</option>
+      </select>
+      <span class="slot-status w-4 flex-shrink-0 text-xs text-stone-400" data-slot="${slotKey}"></span>
+      <button type="button" class="btn-remove-autre flex-shrink-0 px-1 text-lg leading-none text-stone-300 hover:text-red-500 transition-colors">×</button>`;
+    row.querySelector('.slot-select').addEventListener('change', e => {
+      if (e.target.value === '__autre__') {
+        e.target.value = '';
+        const lbl = row.querySelector('.autre-label').value.trim() || 'chant';
+        openSongPicker(slotKey, '', lbl, container);
+      }
+    });
+    row.querySelector('.btn-remove-autre').addEventListener('click', () => row.remove());
+    entriesEl.appendChild(row);
+  }
+
+  container.querySelector('.btn-add-autre').addEventListener('click', () => addAutreEntry('', ''));
+  (entries || []).forEach(e => addAutreEntry(e.label, e.pdf));
+}
+
+function getAutreSlots(container) {
+  if (!container) return [];
+  return [...container.querySelectorAll('.autre-entry')].map(row => ({
+    label: row.querySelector('.autre-label')?.value.trim() || '',
+    pdf:   row.querySelector('.slot-select')?.value || ''
+  })).filter(e => e.label || e.pdf);
+}
+
+// ── Sélecteur de chant (pour les slots de programme) ──────────
+const pickerModal = document.getElementById('modal-song-picker');
+let pickerCtx = null;
+
+function openSongPicker(slot, occasion, label, container) {
+  pickerCtx = { slot, occasion, label, container };
+  document.getElementById('picker-title').textContent = `Choisir un chant — ${label}`;
+  document.getElementById('picker-note').textContent = occasion
+    ? `L'occasion « ${occasion} » sera ajoutée automatiquement si le chant ne l'a pas encore.`
+    : '';
+  document.getElementById('picker-search').value = '';
+  renderPickerList('');
+  pickerModal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('picker-search').focus(), 50);
+}
+
+function renderPickerList(query) {
+  const q = query.toLowerCase().trim();
+  const songs = adminSongsCache
+    .filter(s => s.pdf && (!q || s.title.toLowerCase().includes(q)))
+    .sort((a, b) => a.title.localeCompare(b.title, 'fr'));
+  const list = document.getElementById('picker-list');
+  if (!songs.length) {
+    list.innerHTML = '<p class="px-4 py-5 text-center text-stone-400 italic">Aucun chant trouvé.</p>';
+    return;
+  }
+  const occ = pickerCtx?.occasion || '';
+  list.innerHTML = songs.map(s => {
+    const hasOcc = !occ || s.occasions.includes(occ);
+    return `<button
+      data-pdf="${s.pdf}" data-title="${s.title.replace(/"/g,'&quot;')}"
+      data-path="${s.path}" data-has-occ="${hasOcc}"
+      class="picker-song-btn flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left transition-colors hover:bg-stone-50">
+      <div class="min-w-0">
+        <span class="block truncate font-medium text-stone-900">${s.title}</span>
+        <div class="mt-0.5 flex flex-wrap gap-1">
+          ${s.occasions.map(o => `<span class="rounded-full bg-stone-100 px-1.5 text-xs text-stone-500">${o}</span>`).join('')}
+        </div>
+      </div>
+      ${!hasOcc && occ ? `<span class="flex-shrink-0 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">+ ${occ}</span>` : ''}
+    </button>`;
+  }).join('');
+  list.querySelectorAll('.picker-song-btn').forEach(btn => {
+    btn.addEventListener('click', () => pickSong(btn));
+  });
+}
+
+async function pickSong(btn) {
+  const { slot, occasion, container } = pickerCtx;
+  const pdf     = btn.dataset.pdf;
+  const title   = btn.dataset.title;
+  const path    = btn.dataset.path;
+  const hasOcc  = btn.dataset.hasOcc === 'true';
+  const sel     = container.querySelector(`.slot-select[data-slot="${slot}"]`);
+  const statusEl = container.querySelector(`.slot-status[data-slot="${slot}"]`);
+  closeSongPicker();
+
+  if (!hasOcc && occasion) {
+    statusEl.textContent = '…';
+    try {
+      const d = await ghGet(`contents/${path}`);
+      const md = b64decode(d.content);
+      const song = adminSongsCache.find(s => s.path === path);
+      const merged = [...new Set([...(song ? song.occasions : []), occasion])];
+      const newMd = md.replace(/^occasion:\s*.+$/m, `occasion: ${formatOccasionYaml(merged)}`);
+      await ghPut(path, b64encode(newMd), `tag: ${title} +${occasion}`, d.sha);
+      statusEl.textContent = '✓';
+      loadSongs(); triggerRebuild();
+    } catch { statusEl.textContent = '✗'; return; }
+  }
+
+  const existing = sel.querySelector(`option[value="${pdf}"]`);
+  if (existing) { existing.selected = true; }
+  else { sel.appendChild(new Option(title, pdf, true, true)); }
+}
+
+function closeSongPicker() {
+  pickerModal.style.display = 'none';
+  document.body.style.overflow = '';
+  pickerCtx = null;
+}
+
+document.getElementById('btn-close-picker').addEventListener('click', closeSongPicker);
+pickerModal.addEventListener('click', e => { if (e.target === pickerModal) closeSongPicker(); });
+document.getElementById('picker-search').addEventListener('input', e => renderPickerList(e.target.value));
 </script>
 </body>
 </html>

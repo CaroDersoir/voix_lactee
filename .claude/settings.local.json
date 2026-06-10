@@ -7,7 +7,9 @@
       "PowerShell(cd \"C:\\\\Users\\\\Caroline\\\\Documents\\\\site_web\\\\voix_lactee\"; Get-ChildItem src -Recurse -Name | Where-Object { $_ -notmatch \"node_modules\" })",
       "Bash(Remove-Item -Force \"C:\\\\Users\\\\Caroline\\\\Documents\\\\site_web\\\\voix_lactee\\\\public\\\\admin\\\\index.html\")",
       "Bash(Remove-Item -Force \"C:\\\\Users\\\\Caroline\\\\Documents\\\\site_web\\\\voix_lactee\\\\public\\\\admin\\\\config.yml\")",
-      "Bash(Remove-Item -Force \"C:\\\\Users\\\\Caroline\\\\Documents\\\\site_web\\\\voix_lactee\\\\public\\\\admin\")"
+      "Bash(Remove-Item -Force \"C:\\\\Users\\\\Caroline\\\\Documents\\\\site_web\\\\voix_lactee\\\\public\\\\admin\")",
+      "Bash(npm install *)",
+      "Bash(npm run *)"
     ]
   }
 }

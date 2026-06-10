@@ -1,5 +1,50 @@
 @import "tailwindcss";
 
 body {
-    font-family: "Oswald", sans-serif;
+    font-family: "Lato", sans-serif;
+}
+
+
+/*
+titre page
+ */
+h1 {
+    font-family: "Cinzel", sans-serif;
+}
+
+/*
+sous-titre page
+ */
+p.subtitle {
+    font-family: "Cormorant", sans-serif;
+    font-size: 1.2rem;
+}
+
+/*
+h2 titre section/bloc/article
+ */
+
+
+/* trop cursive */
+/*    font-family: "Great Vibes", sans-serif;*/
+
+/*
+header de l'admin
+ */
+title {
+    font-family: "Cormorant", serif;
+}
+
+/*
+header, voix lactee
+ */
+span.site-name {
+    font-family: "Cormorant", sans-serif;
+}
+
+/*
+onglet header, et le footer
+ */
+a {
+    font-family: "Cormorant", sans-serif;
 }

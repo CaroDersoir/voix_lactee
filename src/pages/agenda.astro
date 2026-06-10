@@ -12,7 +12,7 @@ const upcomingEvents = events
   .sort((a, b) => a.data.date.getTime() - b.data.date.getTime())
   .map(event => {
     const prog: Record<string, string> = {};
-    ['accueil','kyrie','gloria','psaume','alleluia','priere_universelle','offertoire','sanctus','agnus','communion','action_grace','envoi','en_plus'].forEach(k => {
+    ['entree_maries','chant_entree','procession_entree','esprit_saint','accueil','kyrie','gloria','psaume','alleluia','benediction_alliances','louange','priere_universelle','notre_pere','offertoire','sanctus','agnus','communion','signature_registres','post_communion','action_grace','vierge','envoi','chant_final','chant_sortie','sortie_maries','en_plus','en_plus_2','en_plus_3'].forEach(k => {
       const v = (event.data as any)['program_' + k] as string | undefined;
       if (v) prog[k] = v;
     });
@@ -93,6 +93,12 @@ const upcomingEvents = events
 				<div id="detail-program-section" class="hidden">
 					<h3 class="mb-3 border-b border-stone-100 pb-1 text-base font-semibold text-stone-800">Programme</h3>
 					<div id="detail-program" class="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm"></div>
+				<button id="btn-download-zip" class="mt-3 hidden items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 disabled:opacity-50">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+					</svg>
+					<span id="btn-download-zip-label">Télécharger toutes les partitions (ZIP)</span>
+				</button>
 				</div>
 
 				<div>
@@ -135,7 +141,10 @@ const upcomingEvents = events
 </Layout>
 
 <script>
+	import JSZip from 'jszip';
+
 	let currentDetailId: string | null = null;
+	let currentPdfEntries: Array<{ name: string; url: string }> = [];
 
 	function loadSignups(id: string): any[] { try { return JSON.parse(localStorage.getItem('vl_signups_' + id) || '[]'); } catch { return []; } }
 	function saveSignups(id: string, d: any[]) { localStorage.setItem('vl_signups_' + id, JSON.stringify(d)); }
@@ -166,10 +175,24 @@ const upcomingEvents = events
 	const base = songsDataEl?.dataset.base || '/';
 
 	const SLOT_LABELS: Record<string, string> = {
+		entree_maries: 'Entrée des mariés',
+		chant_entree: "Chant d'entrée",
+		procession_entree: "Procession d'entrée",
+		esprit_saint: "Chant à l'Esprit Saint",
 		accueil: 'Accueil', kyrie: 'Kyrie', gloria: 'Gloria', psaume: 'Psaume',
-		alleluia: 'Alléluia', priere_universelle: 'Prière universelle', offertoire: 'Offertoire',
+		alleluia: 'Alléluia',
+		benediction_alliances: 'Bénédiction des alliances',
+		louange: 'Louange',
+		priere_universelle: 'Prière universelle', offertoire: 'Offertoire',
+		notre_pere: 'Notre Père',
 		sanctus: 'Sanctus', agnus: 'Agnus Dei', communion: 'Communion',
-		action_grace: 'Action de grâce', envoi: 'Envoi', en_plus: 'En plus',
+		signature_registres: 'Signature des registres',
+		post_communion: 'Post-communion', action_grace: 'Action de grâce',
+		vierge: 'Chant à la Vierge', envoi: 'Envoi',
+		chant_final: 'Chant final',
+		chant_sortie: 'Chant de sortie',
+		sortie_maries: 'Sortie des mariés',
+		en_plus: 'En plus (1)', en_plus_2: 'En plus (2)', en_plus_3: 'En plus (3)',
 	};
 
 	function openDetail(card: HTMLElement) {
@@ -206,17 +229,29 @@ const upcomingEvents = events
 		let prog: Record<string, string> = {};
 		try { prog = JSON.parse(card.dataset.program || '{}'); } catch {}
 		const progEntries = Object.entries(prog).filter(([, v]) => v);
-		if (card.dataset.type === 'messe' && progEntries.length > 0) {
+		const dlBtn = document.getElementById('btn-download-zip') as HTMLButtonElement;
+		const dlLabel = document.getElementById('btn-download-zip-label') as HTMLSpanElement;
+		if ((card.dataset.type === 'messe' || card.dataset.type === 'messe_mariage' || card.dataset.type === 'benediction') && progEntries.length > 0) {
+			currentPdfEntries = [];
 			progEl.innerHTML = progEntries.map(([k, v]) => {
 				const songTitle = songsMap[v] || v.split('/').pop()?.replace(/\.pdf$/i, '') || '';
+				const pdfUrl = `${base}${v.replace(/^\/+/, '')}`;
+				currentPdfEntries.push({ name: songTitle || v.split('/').pop() || k, url: pdfUrl });
 				return `<div class="flex items-center gap-1.5">
 					<span class="w-32 flex-shrink-0 text-xs font-medium text-stone-500">${SLOT_LABELS[k] ?? k}</span>
 					<span class="truncate text-xs text-stone-800">${songTitle}</span>
-					${v ? `<button class="agenda-pdf-btn flex-shrink-0 text-xs text-blue-600 hover:underline" data-url="${base}${v.replace(/^\/+/, '')}" title="Voir la partition">PDF</button>` : ''}
+					${v ? `<button class="agenda-pdf-btn flex-shrink-0 text-xs text-blue-600 hover:underline" data-url="${pdfUrl}" title="Voir la partition">PDF</button>` : ''}
 				</div>`;
 			}).join('');
 			progSection.style.display = 'block';
-		} else { progSection.style.display = 'none'; }
+			dlBtn.style.display = 'inline-flex';
+			dlBtn.disabled = false;
+			dlLabel.textContent = 'Télécharger toutes les partitions (ZIP)';
+		} else {
+			currentPdfEntries = [];
+			progSection.style.display = 'none';
+			dlBtn.style.display = 'none';
+		}
 
 		renderSignupsList(id);
 		(document.getElementById('form-signup') as HTMLFormElement).reset();
@@ -255,6 +290,39 @@ const upcomingEvents = events
 		saveSignups(currentDetailId, signups);
 		renderSignupsList(currentDetailId);
 		(document.getElementById('form-signup') as HTMLFormElement).reset();
+	});
+
+	// ── Téléchargement ZIP des partitions ─────────────────────
+	document.getElementById('btn-download-zip')!.addEventListener('click', async () => {
+		if (!currentPdfEntries.length) return;
+		const btn = document.getElementById('btn-download-zip') as HTMLButtonElement;
+		const label = document.getElementById('btn-download-zip-label') as HTMLSpanElement;
+		btn.disabled = true;
+		label.textContent = 'Téléchargement en cours…';
+
+		try {
+			const zip = new JSZip();
+			const seen = new Map<string, number>();
+			await Promise.all(currentPdfEntries.map(async ({ name, url }) => {
+				const res = await fetch(url);
+				const buf = await res.arrayBuffer();
+				const count = seen.get(name) ?? 0;
+				seen.set(name, count + 1);
+				const filename = count === 0 ? `${name}.pdf` : `${name} (${count}).pdf`;
+				zip.file(filename, buf);
+			}));
+			const blob = await zip.generateAsync({ type: 'blob' });
+			const a = document.createElement('a');
+			a.href = URL.createObjectURL(blob);
+			a.download = `partitions.zip`;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(a.href);
+		} finally {
+			btn.disabled = false;
+			label.textContent = 'Télécharger toutes les partitions (ZIP)';
+		}
 	});
 
 	// ── Visionneuse PDF ────────────────────────────────────────
