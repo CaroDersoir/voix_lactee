@@ -1,5 +1,5 @@
 ---
 title: Messe_Saint_Jean
-occasion: Kyrie
+occasion: [Kyrie, Gloria]
 pdf: uploads/messe-saint-jean.pdf
 ---
