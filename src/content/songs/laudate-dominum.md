@@ -1,5 +1,5 @@
 ---
 title: Laudate Dominum
-occasion: Envoi
+occasion: [Envoi, Action de grâce]
 pdf: uploads/laudate-dominum.pdf
 ---
