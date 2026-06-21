@@ -218,11 +218,21 @@ const isExternalAudio = (path: string | undefined) =>
                             </div>
                         </td>
                         <td class="px-4 py-3">
-                            {song.data.pdf ? (
-                                    <button class="pdf-btn text-blue-800 underline"
-                                            data-url={`${base}${song.data.pdf.replace(/^\/+/, '')}`}>
-                                        Voir PDF
-                                    </button>
+                            {song.data.pdfs && song.data.pdfs.length > 1 ? (
+                                <button class="pdf-btn text-blue-800 underline"
+                                        data-pdfs={JSON.stringify(song.data.pdfs.map(p => ({ label: p.label, url: `${base}${p.url.replace(/^\/+/, '')}` })))}>
+                                    Voir PDF ▾
+                                </button>
+                            ) : song.data.pdfs && song.data.pdfs.length === 1 ? (
+                                <button class="pdf-btn text-blue-800 underline"
+                                        data-url={`${base}${song.data.pdfs[0].url.replace(/^\/+/, '')}`}>
+                                    Voir PDF
+                                </button>
+                            ) : song.data.pdf ? (
+                                <button class="pdf-btn text-blue-800 underline"
+                                        data-url={`${base}${song.data.pdf.replace(/^\/+/, '')}`}>
+                                    Voir PDF
+                                </button>
                             ) : '–'}
                         </td>
                         <td class="admin-col hidden px-4 py-3">
@@ -277,6 +287,9 @@ const isExternalAudio = (path: string | undefined) =>
                         <iframe id="pdf-frame" src="" class="h-full w-full border-0"></iframe>
                     </div>
                 </div>
+
+                <!-- Sélecteur de partition (multi-PDF) -->
+                <div id="pdf-picker" class="fixed z-[60] rounded-lg border border-stone-200 bg-white py-1 shadow-lg" style="display:none; min-width:10rem;"></div>
 
                 </Layout>
 
@@ -389,9 +402,15 @@ const isExternalAudio = (path: string | undefined) =>
 
                         const pdfBtn = target.closest<HTMLButtonElement>('.pdf-btn');
                         if (pdfBtn) {
-                            pdfFrame.src = pdfBtn.dataset.url!;
-                            pdfOverlay.style.display = 'flex';
-                            document.body.style.overflow = 'hidden';
+                            const pdfsRaw = pdfBtn.dataset.pdfs;
+                            if (pdfsRaw) {
+                                e.stopPropagation();
+                                showPdfPicker(pdfBtn, JSON.parse(pdfsRaw));
+                            } else {
+                                pdfFrame.src = pdfBtn.dataset.url!;
+                                pdfOverlay.style.display = 'flex';
+                                document.body.style.overflow = 'hidden';
+                            }
                         }
                     });
 
@@ -427,6 +446,35 @@ const isExternalAudio = (path: string | undefined) =>
                             });
                             applyFilters();
                         });
+                    });
+
+                    // ── Sélecteur de partition (multi-PDF) ────────────────────
+                    const pdfPicker = document.getElementById('pdf-picker') as HTMLElement;
+
+                    function showPdfPicker(btn: HTMLElement, pdfs: Array<{label: string, url: string}>) {
+                        pdfPicker.innerHTML = pdfs.map(p =>
+                            `<button class="pdf-picker-item block w-full truncate rounded px-3 py-1.5 text-left text-sm text-stone-700 hover:bg-blue-50 hover:text-blue-800" data-url="${p.url}">${p.label}</button>`
+                        ).join('');
+                        const rect = btn.getBoundingClientRect();
+                        pdfPicker.style.top = `${rect.bottom + 4}px`;
+                        pdfPicker.style.left = `${rect.left}px`;
+                        pdfPicker.style.display = 'block';
+                    }
+
+                    pdfPicker.addEventListener('click', (e) => {
+                        const item = (e.target as HTMLElement).closest<HTMLButtonElement>('.pdf-picker-item');
+                        if (item) {
+                            pdfPicker.style.display = 'none';
+                            pdfFrame.src = item.dataset.url!;
+                            pdfOverlay.style.display = 'flex';
+                            document.body.style.overflow = 'hidden';
+                        }
+                    });
+
+                    document.addEventListener('click', (e) => {
+                        if (!pdfPicker.contains(e.target as Node)) {
+                            pdfPicker.style.display = 'none';
+                        }
                     });
 
                     // ── Visionneuse PDF ────────────────────────────────────────

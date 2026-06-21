@@ -96,9 +96,13 @@ const base = import.meta.env.DEV
             <div id="song-occasions" class="max-h-40 overflow-y-auto rounded-lg border border-stone-300 px-3 py-2 space-y-1.5"></div>
           </div>
           <div>
-            <label class="mb-1 block text-sm font-medium text-stone-700">Partition (PDF)</label>
-            <input id="song-pdf" type="file" accept=".pdf"
-              class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-700 file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-blue-50 file:px-3 file:py-1 file:text-sm file:font-medium file:text-blue-800 hover:file:bg-blue-100" />
+            <label class="mb-1 block text-sm font-medium text-stone-700">Partitions (PDF)</label>
+            <p class="mb-2 text-xs text-stone-400">Pour les musiciens, ajoutez une partition par instrument avec son libellé (ex. : Voix, Guitare, Orgue). Un seul fichier sans libellé suffit pour les chants simples.</p>
+            <div id="song-pdfs-list" class="mb-2 space-y-2"></div>
+            <button type="button" id="btn-add-song-pdf"
+              class="w-full rounded-lg border border-dashed border-stone-300 px-3 py-1.5 text-xs text-stone-500 hover:border-blue-600 hover:text-blue-700 transition-colors">
+              + Ajouter une partition
+            </button>
           </div>
           <div>
             <p class="mb-1 text-sm font-medium text-stone-700">Pistes audio</p>
@@ -286,8 +290,8 @@ const base = import.meta.env.DEV
 
 <!-- ── Modale : modifier un chant ── -->
 <div id="modal-edit-song" class="fixed inset-0 z-50 items-center justify-center bg-black/50 p-4" style="display:none;">
-  <div class="w-full max-w-lg rounded-xl bg-white shadow-xl">
-    <div class="flex items-center justify-between border-b border-stone-200 px-6 py-4">
+  <div class="flex w-full max-w-lg flex-col rounded-xl bg-white shadow-xl" style="max-height:90vh;">
+    <div class="flex flex-shrink-0 items-center justify-between border-b border-stone-200 px-6 py-4">
       <h2 class="text-base font-semibold text-blue-950">Modifier le chant</h2>
       <button id="btn-close-edit-modal" class="rounded-full p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-900 transition-colors" aria-label="Fermer">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
@@ -295,7 +299,7 @@ const base = import.meta.env.DEV
         </svg>
       </button>
     </div>
-    <div class="px-6 py-5">
+    <div class="overflow-y-auto px-6 py-5">
       <form id="form-edit-song" class="space-y-4">
         <input type="hidden" id="edit-path" />
         <input type="hidden" id="edit-sha" />
@@ -317,10 +321,12 @@ const base = import.meta.env.DEV
           <div id="edit-occasions" class="max-h-40 overflow-y-auto rounded-lg border border-stone-300 px-3 py-2 space-y-1.5"></div>
         </div>
         <div>
-          <label class="mb-1 block text-sm font-medium text-stone-700">Remplacer la partition (PDF)</label>
-          <p id="edit-current-pdf" class="mb-1 text-xs text-stone-400"></p>
-          <input id="edit-pdf" type="file" accept=".pdf"
-            class="w-full rounded-lg border border-stone-200 px-3 py-1.5 text-sm text-stone-600 file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-blue-50 file:px-3 file:py-1 file:text-sm file:font-medium file:text-blue-800 hover:file:bg-blue-100" />
+          <label class="mb-1 block text-sm font-medium text-stone-700">Partitions (PDF)</label>
+          <div id="edit-pdfs-list" class="mb-2 space-y-2"></div>
+          <button type="button" id="btn-add-edit-pdf"
+            class="w-full rounded-lg border border-dashed border-stone-300 px-3 py-1.5 text-xs text-stone-500 hover:border-blue-600 hover:text-blue-700 transition-colors">
+            + Ajouter une partition
+          </button>
         </div>
         <div>
           <p class="mb-1 text-sm font-medium text-stone-700">Pistes audio</p>
@@ -359,9 +365,9 @@ const base = import.meta.env.DEV
         <div id="edit-status" class="hidden rounded-lg px-3 py-2 text-sm"></div>
       </form>
     </div>
-    <div class="flex justify-end gap-3 border-t border-stone-200 px-6 py-4">
+    <div class="flex flex-shrink-0 justify-end gap-3 border-t border-stone-200 px-6 py-4">
       <button type="button" id="btn-cancel-edit"
-        class="rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50 transition-colors">Annuler</button>
+        class="rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50 flex-shrink-0 transition-colors">Annuler</button>
       <button type="submit" form="form-edit-song"
         class="rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 transition-colors">Enregistrer</button>
     </div>
@@ -602,6 +608,48 @@ function getCheckedOccasions(containerId) {
 }
 buildOccasionCheckboxes('song-occasions', []);
 
+function parsePdfsFromMd(md) {
+  const result = [];
+  const re = /^  - label:\s*(.+)\n    url:\s*(.+)$/gm;
+  let m;
+  while ((m = re.exec(md)) !== null) {
+    result.push({ label: m[1].trim().replace(/^"|"$/g, ''), url: m[2].trim() });
+  }
+  return result;
+}
+
+function addPdfEntry(container, opts = {}) {
+  const { label = '', existingUrl = '' } = opts;
+  const entry = document.createElement('div');
+  entry.className = 'pdf-entry flex items-center gap-2';
+  entry.dataset.existingUrl = existingUrl;
+  if (existingUrl) {
+    const filename = existingUrl.split('/').pop();
+    entry.innerHTML = `
+      <input type="text" value="${label.replace(/"/g,'&quot;')}" placeholder="Libellé (ex. : Voix)"
+        class="pdf-label w-28 flex-shrink-0 rounded-lg border border-stone-300 px-2 py-1.5 text-xs focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
+      <span class="flex-1 min-w-0 truncate text-xs text-stone-400" title="${existingUrl}">${filename}</span>
+      <label class="flex-shrink-0 cursor-pointer rounded border border-stone-300 px-2 py-1 text-xs text-stone-500 hover:border-blue-600 hover:text-blue-700 transition-colors whitespace-nowrap">
+        Remplacer <input type="file" accept=".pdf" class="pdf-file hidden" />
+      </label>
+      <button type="button" class="btn-remove-pdf flex-shrink-0 text-lg leading-none text-stone-300 hover:text-red-500 transition-colors">×</button>`;
+  } else {
+    entry.innerHTML = `
+      <input type="text" value="${label.replace(/"/g,'&quot;')}" placeholder="Libellé (ex. : Voix)"
+        class="pdf-label w-28 flex-shrink-0 rounded-lg border border-stone-300 px-2 py-1.5 text-xs focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
+      <input type="file" accept=".pdf"
+        class="pdf-file flex-1 rounded-lg border border-stone-300 px-2 py-1.5 text-xs text-stone-600 file:mr-2 file:cursor-pointer file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-0.5 file:text-xs file:font-medium file:text-blue-800 hover:file:bg-blue-100" />
+      <button type="button" class="btn-remove-pdf flex-shrink-0 text-lg leading-none text-stone-300 hover:text-red-500 transition-colors">×</button>`;
+  }
+  entry.querySelector('.btn-remove-pdf').addEventListener('click', () => entry.remove());
+  container.appendChild(entry);
+  return entry;
+}
+
+addPdfEntry(document.getElementById('song-pdfs-list'));
+document.getElementById('btn-add-song-pdf').addEventListener('click', () => addPdfEntry(document.getElementById('song-pdfs-list')));
+document.getElementById('btn-add-edit-pdf').addEventListener('click', () => addPdfEntry(document.getElementById('edit-pdfs-list')));
+
 function b64decode(str) {
   const binary = atob(str.replace(/\n/g, ''));
   return new TextDecoder().decode(Uint8Array.from(binary, c => c.charCodeAt(0)));
@@ -707,6 +755,7 @@ async function loadSongs() {
       key: md.match(/^key:\s*(.+)$/m)?.[1]?.trim() || '',
       occasions: parseOccasionStr(md.match(/^occasion:\s*(.+)$/m)?.[1]?.trim() || ''),
       pdf: md.match(/^pdf:\s*(.+)$/m)?.[1]?.trim() || '',
+      pdfs: parsePdfsFromMd(md),
       audio_soprano: md.match(/^audio_soprano:\s*(.+)$/m)?.[1]?.trim() || '',
       audio_alto:    md.match(/^audio_alto:\s*(.+)$/m)?.[1]?.trim() || '',
       audio_tenor:   md.match(/^audio_tenor:\s*(.+)$/m)?.[1]?.trim() || '',
@@ -774,7 +823,6 @@ document.getElementById('form-add-song').addEventListener('submit', async e => {
   const title = document.getElementById('song-title').value.trim();
   const key = document.getElementById('song-key').value.trim();
   const occasions = getCheckedOccasions('song-occasions');
-  const pdfFile = document.getElementById('song-pdf').files[0];
   if (!occasions.length) { setStatus('song-status', 'error', 'Veuillez choisir au moins un type de chant.'); return; }
   const normalTitle = t => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
   const duplicate = adminSongsCache.find(s => normalTitle(s.title) === normalTitle(title));
@@ -799,11 +847,19 @@ document.getElementById('form-add-song').addEventListener('submit', async e => {
   setStatus('song-status', 'loading', 'Enregistrement en cours…');
   try {
     const slug = slugify(title);
-    let pdfPath = '';
-    if (pdfFile) {
-      await ghPut(`public/uploads/${slug}.pdf`, await fileToBase64(pdfFile), `ajout partition: ${title}`);
-      pdfPath = `uploads/${slug}.pdf`;
+    const pdfEntries = [...document.getElementById('song-pdfs-list').querySelectorAll('.pdf-entry')];
+    const uploadedPdfs = [];
+    for (const entry of pdfEntries) {
+      const labelVal = entry.querySelector('.pdf-label').value.trim();
+      const file = entry.querySelector('.pdf-file')?.files?.[0];
+      if (file) {
+        const suffix = pdfEntries.length > 1 && labelVal ? `-${slugify(labelVal)}` : '';
+        const uploadPath = `uploads/${slug}${suffix}.pdf`;
+        await ghPut(`public/${uploadPath}`, await fileToBase64(file), `ajout partition: ${title}${labelVal ? ' (' + labelVal + ')' : ''}`);
+        uploadedPdfs.push({ label: labelVal, url: uploadPath });
+      }
     }
+    let pdfPath = uploadedPdfs.length > 0 ? uploadedPdfs[0].url : '';
     const audioVoices = [
       { id: 'song-audio-s', urlId: 'song-audio-s-url', field: 'audio_soprano', suffix: '-soprano' },
       { id: 'song-audio-a', urlId: 'song-audio-a-url', field: 'audio_alto',    suffix: '-alto'    },
@@ -822,16 +878,23 @@ document.getElementById('form-add-song').addEventListener('submit', async e => {
         audioPaths[v.field] = url;
       }
     }
+    const pdfsYaml = uploadedPdfs.length > 1
+      ? `pdfs:\n${uploadedPdfs.map(p => `  - label: ${yamlStr(p.label || 'Partition')}\n    url: ${p.url}`).join('\n')}`
+      : null;
     const mdLines = ['---', `title: ${yamlStr(title)}`, key ? `key: ${yamlStr(key)}` : null,
       `occasion: ${formatOccasionYaml(occasions)}`,
       pdfPath ? `pdf: ${pdfPath}` : null,
+      pdfsYaml,
       audioPaths.audio_soprano ? `audio_soprano: ${yamlStr(audioPaths.audio_soprano)}` : null,
       audioPaths.audio_alto    ? `audio_alto: ${yamlStr(audioPaths.audio_alto)}`       : null,
       audioPaths.audio_tenor   ? `audio_tenor: ${yamlStr(audioPaths.audio_tenor)}`     : null,
       audioPaths.audio_basse   ? `audio_basse: ${yamlStr(audioPaths.audio_basse)}`     : null,
       '---', ''].filter(l => l !== null).join('\n');
     await ghPut(`src/content/songs/${slug}.md`, b64encode(mdLines), `ajout chant: ${title}`);
-    setStatus('song-status', 'ok', '✓ Ajouté. Mise à jour du site dans ~2 min.'); e.target.reset(); buildOccasionCheckboxes('song-occasions', []); loadSongs(); triggerRebuild();
+    setStatus('song-status', 'ok', '✓ Ajouté. Mise à jour du site dans ~2 min.');
+    e.target.reset(); buildOccasionCheckboxes('song-occasions', []);
+    const songPdfsList2 = document.getElementById('song-pdfs-list'); songPdfsList2.innerHTML = ''; addPdfEntry(songPdfsList2);
+    loadSongs(); triggerRebuild();
   } catch(err) { setStatus('song-status', 'error', 'Erreur : ' + err.message); }
 });
 
@@ -847,9 +910,15 @@ function openEditModal(song) {
   document.getElementById('edit-title').value = song.title;
   document.getElementById('edit-key').value = song.key;
   buildOccasionCheckboxes('edit-occasions', song.occasions);
-  document.getElementById('edit-current-pdf').textContent =
-    song.pdf ? `Partition actuelle : ${song.pdf.split('/').pop()}` : 'Aucune partition enregistrée.';
-  document.getElementById('edit-pdf').value = '';
+  const editPdfsList = document.getElementById('edit-pdfs-list');
+  editPdfsList.innerHTML = '';
+  if (song.pdfs && song.pdfs.length > 0) {
+    song.pdfs.forEach(p => addPdfEntry(editPdfsList, { label: p.label, existingUrl: p.url }));
+  } else if (song.pdf) {
+    addPdfEntry(editPdfsList, { label: '', existingUrl: song.pdf });
+  } else {
+    addPdfEntry(editPdfsList);
+  }
   document.getElementById('edit-audio-s-url').value = song.audio_soprano || '';
   document.getElementById('edit-audio-a-url').value = song.audio_alto || '';
   document.getElementById('edit-audio-t-url').value = song.audio_tenor || '';
@@ -874,16 +943,26 @@ document.getElementById('form-edit-song').addEventListener('submit', async e => 
   const title       = document.getElementById('edit-title').value.trim();
   const key         = document.getElementById('edit-key').value.trim();
   const occasions   = getCheckedOccasions('edit-occasions');
-  const pdfFile     = document.getElementById('edit-pdf').files[0];
   const bodyContent = document.getElementById('edit-body-content').value;
   if (!title || !occasions.length) { setStatus('edit-status', 'error', 'Titre et au moins un type obligatoires.'); return; }
   setStatus('edit-status', 'loading', 'Enregistrement en cours…');
   try {
-    let pdfPath = currentEditSong.pdf || '';
-    if (pdfFile) {
-      await ghPut(`public/uploads/${slugify(title)}.pdf`, await fileToBase64(pdfFile), `partition: ${title}`);
-      pdfPath = `uploads/${slugify(title)}.pdf`;
+    const editPdfEntries = [...document.getElementById('edit-pdfs-list').querySelectorAll('.pdf-entry')];
+    const editedPdfs = [];
+    for (const entry of editPdfEntries) {
+      const labelVal = entry.querySelector('.pdf-label').value.trim();
+      const existingUrl = entry.dataset.existingUrl || '';
+      const file = entry.querySelector('.pdf-file')?.files?.[0];
+      if (file) {
+        const suffix = editPdfEntries.length > 1 && labelVal ? `-${slugify(labelVal)}` : '';
+        const newPath = `uploads/${slugify(title)}${suffix}.pdf`;
+        await ghPut(`public/${newPath}`, await fileToBase64(file), `partition: ${title}${labelVal ? ' (' + labelVal + ')' : ''}`);
+        editedPdfs.push({ label: labelVal, url: newPath });
+      } else if (existingUrl) {
+        editedPdfs.push({ label: labelVal, url: existingUrl });
+      }
     }
+    let pdfPath = editedPdfs.length > 0 ? editedPdfs[0].url : '';
     const editAudioVoices = [
       { fileId: 'edit-audio-s', urlId: 'edit-audio-s-url', field: 'audio_soprano', suffix: '-soprano' },
       { fileId: 'edit-audio-a', urlId: 'edit-audio-a-url', field: 'audio_alto',    suffix: '-alto'    },
@@ -902,8 +981,11 @@ document.getElementById('form-edit-song').addEventListener('submit', async e => 
         audioFields[v.field] = urlVal;
       }
     }
+    const editPdfsYaml = editedPdfs.length > 1
+      ? `pdfs:\n${editedPdfs.map(p => `  - label: ${yamlStr(p.label || 'Partition')}\n    url: ${p.url}`).join('\n')}`
+      : null;
     const md = ['---', `title: ${yamlStr(title)}`, key ? `key: ${yamlStr(key)}` : null,
-      `occasion: ${formatOccasionYaml(occasions)}`, pdfPath ? `pdf: ${pdfPath}` : null,
+      `occasion: ${formatOccasionYaml(occasions)}`, pdfPath ? `pdf: ${pdfPath}` : null, editPdfsYaml,
       audioFields.audio_soprano ? `audio_soprano: ${yamlStr(audioFields.audio_soprano)}` : null,
       audioFields.audio_alto    ? `audio_alto: ${yamlStr(audioFields.audio_alto)}`       : null,
       audioFields.audio_tenor   ? `audio_tenor: ${yamlStr(audioFields.audio_tenor)}`     : null,

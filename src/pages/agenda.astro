@@ -7,7 +7,15 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 const events    = await getCollection('events');
 const allSongs  = await getCollection('songs');
 const songsByPdf: Record<string, string> = {};
-allSongs.forEach(s => { if (s.data.pdf) songsByPdf[s.data.pdf] = s.data.title; });
+const songMultiPdfsMap: Record<string, Array<{label: string, url: string}>> = {};
+allSongs.forEach(s => {
+  if (s.data.pdf) {
+    songsByPdf[s.data.pdf] = s.data.title;
+    if (s.data.pdfs && s.data.pdfs.length > 1) {
+      songMultiPdfsMap[s.data.pdf] = s.data.pdfs;
+    }
+  }
+});
 const upcomingEvents = events
   .sort((a, b) => a.data.date.getTime() - b.data.date.getTime())
   .map(event => {
@@ -54,7 +62,7 @@ const upcomingEvents = events
 	)}
 	</div>
 
-	<div id="songs-data" data-map={JSON.stringify(songsByPdf)} data-base={base} hidden></div>
+	<div id="songs-data" data-map={JSON.stringify(songsByPdf)} data-multi-pdfs={JSON.stringify(songMultiPdfsMap)} data-base={base} hidden></div>
 
 	<!-- Visionneuse PDF -->
 	<div id="pdf-overlay" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/75 p-3" style="display: none;">
@@ -68,6 +76,9 @@ const upcomingEvents = events
 			<iframe id="pdf-frame" src="" class="h-full w-full border-0"></iframe>
 		</div>
 	</div>
+
+	<!-- Sélecteur de partition (multi-PDF) -->
+	<div id="pdf-picker" class="fixed z-[70] rounded-lg border border-stone-200 bg-white py-1 shadow-lg" style="display:none; min-width:10rem;"></div>
 
 	<!-- Modale détail + inscription -->
 	<div id="modal-detail" class="fixed inset-0 z-50 items-center justify-center bg-black/50 p-4" style="display:none;">
@@ -172,6 +183,7 @@ const upcomingEvents = events
 
 	const songsDataEl = document.getElementById('songs-data') as HTMLElement;
 	const songsMap: Record<string, string> = JSON.parse(songsDataEl?.dataset.map || '{}');
+	const multiPdfsMap: Record<string, Array<{label: string, url: string}>> = JSON.parse(songsDataEl?.dataset.multiPdfs || '{}');
 	const base = songsDataEl?.dataset.base || '/';
 
 	const SLOT_LABELS: Record<string, string> = {
@@ -236,6 +248,18 @@ const upcomingEvents = events
 			progEl.innerHTML = progEntries.map(([k, v]) => {
 				const songTitle = songsMap[v] || v.split('/').pop()?.replace(/\.pdf$/i, '') || '';
 				const pdfUrl = `${base}${v.replace(/^\/+/, '')}`;
+				const multiPdfs = multiPdfsMap[v];
+				if (multiPdfs && multiPdfs.length > 1) {
+					multiPdfs.forEach(p => {
+						currentPdfEntries.push({ name: `${songTitle} - ${p.label}`, url: `${base}${p.url.replace(/^\/+/, '')}` });
+					});
+					const pdfsAttr = JSON.stringify(multiPdfs.map(p => ({ label: p.label, url: `${base}${p.url.replace(/^\/+/, '')}` }))).replace(/"/g, '&quot;');
+					return `<div class="flex items-center gap-1.5">
+						<span class="w-32 flex-shrink-0 text-xs font-medium text-stone-500">${SLOT_LABELS[k] ?? k}</span>
+						<span class="truncate text-xs text-stone-800">${songTitle}</span>
+						<button class="agenda-pdf-btn flex-shrink-0 text-xs text-blue-600 hover:underline" data-pdfs="${pdfsAttr}" title="Choisir la partition">PDF ▾</button>
+					</div>`;
+				}
 				currentPdfEntries.push({ name: songTitle || v.split('/').pop() || k, url: pdfUrl });
 				return `<div class="flex items-center gap-1.5">
 					<span class="w-32 flex-shrink-0 text-xs font-medium text-stone-500">${SLOT_LABELS[k] ?? k}</span>
@@ -333,12 +357,44 @@ const upcomingEvents = events
 	document.getElementById('btn-close-pdf')!.addEventListener('click', closePdf);
 	pdfOverlay.addEventListener('click', (e) => { if (e.target === pdfOverlay) closePdf(); });
 
+	const pdfPicker = document.getElementById('pdf-picker') as HTMLElement;
+
+	function showPdfPicker(btn: HTMLElement, pdfs: Array<{label: string, url: string}>) {
+		pdfPicker.innerHTML = pdfs.map(p =>
+			`<button class="pdf-picker-item block w-full truncate rounded px-3 py-1.5 text-left text-sm text-stone-700 hover:bg-blue-50 hover:text-blue-800" data-url="${p.url}">${p.label}</button>`
+		).join('');
+		const rect = btn.getBoundingClientRect();
+		pdfPicker.style.top = `${rect.bottom + 4}px`;
+		pdfPicker.style.left = `${rect.left}px`;
+		pdfPicker.style.display = 'block';
+	}
+
+	pdfPicker.addEventListener('click', (e) => {
+		const item = (e.target as HTMLElement).closest<HTMLButtonElement>('.pdf-picker-item');
+		if (item) {
+			pdfPicker.style.display = 'none';
+			pdfFrame.src = item.dataset.url!;
+			pdfOverlay.style.display = 'flex';
+		}
+	});
+
+	document.addEventListener('click', (e) => {
+		if (!pdfPicker.contains(e.target as Node)) {
+			pdfPicker.style.display = 'none';
+		}
+	});
+
 	document.getElementById('modal-detail')!.addEventListener('click', (e) => {
 		const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('.agenda-pdf-btn');
 		if (btn) {
 			e.stopPropagation();
-			pdfFrame.src = btn.dataset.url!;
-			pdfOverlay.style.display = 'flex';
+			const pdfsRaw = btn.dataset.pdfs;
+			if (pdfsRaw) {
+				showPdfPicker(btn, JSON.parse(pdfsRaw));
+			} else {
+				pdfFrame.src = btn.dataset.url!;
+				pdfOverlay.style.display = 'flex';
+			}
 		}
 	});
 </script>

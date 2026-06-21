@@ -8,6 +8,7 @@ const songs = defineCollection({
 		key: z.string().optional(),
 		occasion: z.union([z.string(), z.array(z.string())]).transform(v => Array.isArray(v) ? v : [v]),
 		pdf: z.string().optional(),
+		pdfs: z.array(z.object({ label: z.string(), url: z.string() })).optional(),
 		audio_soprano: z.string().optional(),
 		audio_alto: z.string().optional(),
 		audio_tenor: z.string().optional(),
