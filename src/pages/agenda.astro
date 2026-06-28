@@ -353,6 +353,16 @@ const upcomingEvents = events
 	const pdfOverlay = document.getElementById('pdf-overlay') as HTMLElement;
 	const pdfFrame   = document.getElementById('pdf-frame')   as HTMLIFrameElement;
 
+	function openPdf(url: string) {
+		const pref = localStorage.getItem('vl_pdf_pref') || 'modal';
+		if (pref === 'tab') {
+			window.open(url, '_blank', 'noopener');
+		} else {
+			pdfFrame.src = url;
+			pdfOverlay.style.display = 'flex';
+		}
+	}
+
 	function closePdf() { pdfOverlay.style.display = 'none'; pdfFrame.src = ''; }
 	document.getElementById('btn-close-pdf')!.addEventListener('click', closePdf);
 	pdfOverlay.addEventListener('click', (e) => { if (e.target === pdfOverlay) closePdf(); });
@@ -373,8 +383,7 @@ const upcomingEvents = events
 		const item = (e.target as HTMLElement).closest<HTMLButtonElement>('.pdf-picker-item');
 		if (item) {
 			pdfPicker.style.display = 'none';
-			pdfFrame.src = item.dataset.url!;
-			pdfOverlay.style.display = 'flex';
+			openPdf(item.dataset.url!);
 		}
 	});
 
@@ -392,8 +401,7 @@ const upcomingEvents = events
 			if (pdfsRaw) {
 				showPdfPicker(btn, JSON.parse(pdfsRaw));
 			} else {
-				pdfFrame.src = btn.dataset.url!;
-				pdfOverlay.style.display = 'flex';
+				openPdf(btn.dataset.url!);
 			}
 		}
 	});

@@ -46,15 +46,15 @@ const base = import.meta.env.DEV
 
 <div id="screen-admin" class="hidden min-h-screen" style="display:none">
 
-  <header class="border-b border-stone-200 bg-white px-6 py-4 flex items-center justify-between shadow-sm">
-    <h1 class="text-base font-semibold text-blue-950">Administration — Voix Lactée</h1>
-    <div class="flex items-center gap-4">
+  <header class="border-b border-stone-200 bg-white px-4 py-3 sm:px-6 sm:py-4 flex items-center justify-between gap-3 shadow-sm">
+    <h1 class="text-sm sm:text-base font-semibold text-blue-950 truncate">Administration — Voix Lactée</h1>
+    <div class="flex flex-shrink-0 items-center gap-3">
       <a id="btn-back-site" href={base}
         class="inline-flex items-center gap-1.5 text-sm text-stone-400 hover:text-blue-800 transition-colors">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
         </svg>
-        Retour au site
+        <span class="hidden sm:inline">Retour au site</span>
       </a>
       <button id="btn-logout" class="text-sm text-stone-400 hover:text-stone-700 transition-colors">Déconnexion</button>
     </div>
@@ -73,10 +73,10 @@ const base = import.meta.env.DEV
     </div>
   </div>
 
-  <main class="mx-auto max-w-3xl space-y-6 p-6">
+  <main class="mx-auto max-w-3xl space-y-4 sm:space-y-6 p-3 sm:p-6">
 
     <div id="tab-songs">
-      <div class="rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
+      <div class="rounded-xl border border-stone-200 bg-white p-4 sm:p-6 shadow-sm">
         <h2 class="mb-4 text-sm font-semibold uppercase tracking-wide text-stone-500">Ajouter un chant</h2>
         <form id="form-add-song" class="space-y-4">
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -107,7 +107,7 @@ const base = import.meta.env.DEV
           <div>
             <p class="mb-1 text-sm font-medium text-stone-700">Pistes audio</p>
             <p class="mb-2 text-xs text-stone-400">Lien YouTube / URL ou fichier MP3 (le fichier est prioritaire si les deux sont renseignés).</p>
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label class="mb-1 block text-xs text-stone-500">Soprano</label>
                 <input id="song-audio-s-url" type="url" placeholder="Lien YouTube ou URL audio"
@@ -162,7 +162,7 @@ const base = import.meta.env.DEV
     </div>
 
     <div id="tab-events" class="hidden">
-      <div class="rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
+      <div class="rounded-xl border border-stone-200 bg-white p-4 sm:p-6 shadow-sm">
         <h2 class="mb-4 text-sm font-semibold uppercase tracking-wide text-stone-500">Ajouter un événement</h2>
 
         <!-- Indicateur d'étapes -->
@@ -276,7 +276,7 @@ const base = import.meta.env.DEV
       </div>
 
       <div class="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
-        <div class="border-b border-stone-100 px-6 py-4">
+        <div class="border-b border-stone-100 px-4 sm:px-6 py-4">
           <h2 class="text-sm font-semibold uppercase tracking-wide text-stone-500">Événements existants</h2>
         </div>
         <div id="events-list" class="divide-y divide-stone-100 text-sm">
@@ -304,7 +304,7 @@ const base = import.meta.env.DEV
         <input type="hidden" id="edit-path" />
         <input type="hidden" id="edit-sha" />
         <input type="hidden" id="edit-body-content" />
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label class="mb-1 block text-sm font-medium text-stone-700">Titre <span class="text-red-500">*</span></label>
             <input id="edit-title" type="text" required
@@ -331,7 +331,7 @@ const base = import.meta.env.DEV
         <div>
           <p class="mb-1 text-sm font-medium text-stone-700">Pistes audio</p>
           <p class="mb-2 text-xs text-stone-400">Lien YouTube / URL ou fichier MP3 (le fichier est prioritaire). Vider un champ URL supprime l'audio.</p>
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label class="mb-1 block text-xs text-stone-500">Soprano</label>
               <input id="edit-audio-s-url" type="url" placeholder="Lien YouTube ou URL audio"
@@ -446,7 +446,7 @@ const base = import.meta.env.DEV
             <div id="edit-evt-program-autre"></div>
           </div>
         </div>
-        <div class="grid grid-cols-3 gap-4 border-t border-stone-100 pt-3">
+        <div class="grid grid-cols-1 gap-4 border-t border-stone-100 pt-3 sm:grid-cols-3">
           <div>
             <label class="mb-1 block text-sm font-medium text-stone-700">Animateur·ice</label>
             <input id="edit-evt-animateur" type="text"
@@ -621,13 +621,13 @@ function parsePdfsFromMd(md) {
 function addPdfEntry(container, opts = {}) {
   const { label = '', existingUrl = '' } = opts;
   const entry = document.createElement('div');
-  entry.className = 'pdf-entry flex items-center gap-2';
+  entry.className = 'pdf-entry flex flex-wrap items-center gap-2';
   entry.dataset.existingUrl = existingUrl;
   if (existingUrl) {
     const filename = existingUrl.split('/').pop();
     entry.innerHTML = `
       <input type="text" value="${label.replace(/"/g,'&quot;')}" placeholder="Libellé (ex. : Voix)"
-        class="pdf-label w-28 flex-shrink-0 rounded-lg border border-stone-300 px-2 py-1.5 text-xs focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
+        class="pdf-label w-full rounded-lg border border-stone-300 px-2 py-1.5 text-xs focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700 sm:w-28 sm:flex-shrink-0" />
       <span class="flex-1 min-w-0 truncate text-xs text-stone-400" title="${existingUrl}">${filename}</span>
       <label class="flex-shrink-0 cursor-pointer rounded border border-stone-300 px-2 py-1 text-xs text-stone-500 hover:border-blue-600 hover:text-blue-700 transition-colors whitespace-nowrap">
         Remplacer <input type="file" accept=".pdf" class="pdf-file hidden" />
@@ -636,7 +636,7 @@ function addPdfEntry(container, opts = {}) {
   } else {
     entry.innerHTML = `
       <input type="text" value="${label.replace(/"/g,'&quot;')}" placeholder="Libellé (ex. : Voix)"
-        class="pdf-label w-28 flex-shrink-0 rounded-lg border border-stone-300 px-2 py-1.5 text-xs focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
+        class="pdf-label w-full rounded-lg border border-stone-300 px-2 py-1.5 text-xs focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700 sm:w-28 sm:flex-shrink-0" />
       <input type="file" accept=".pdf"
         class="pdf-file flex-1 rounded-lg border border-stone-300 px-2 py-1.5 text-xs text-stone-600 file:mr-2 file:cursor-pointer file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-0.5 file:text-xs file:font-medium file:text-blue-800 hover:file:bg-blue-100" />
       <button type="button" class="btn-remove-pdf flex-shrink-0 text-lg leading-none text-stone-300 hover:text-red-500 transition-colors">×</button>`;
@@ -664,6 +664,13 @@ function slugify(str) {
 }
 function yamlStr(val) {
   return /[:#\[\]{},|>&*!'"\\]/.test(val) || val.includes('\n') ? JSON.stringify(val) : val;
+}
+function parseYamlVal(raw) {
+  const v = (raw || '').trim();
+  if (v.startsWith('"') && v.endsWith('"')) {
+    try { return JSON.parse(v); } catch { return v.slice(1, -1); }
+  }
+  return v;
 }
 
 const GH = { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json', Accept: 'application/vnd.github+json' };
@@ -751,8 +758,8 @@ async function loadSongs() {
     const md = b64decode(d.content);
     const bodyParts = md.split(/^---\s*$/m);
     return { path: f.path, sha: d.sha,
-      title: md.match(/^title:\s*(.+)$/m)?.[1]?.trim().replace(/^"|"$/g, '') || f.name,
-      key: md.match(/^key:\s*(.+)$/m)?.[1]?.trim() || '',
+      title: parseYamlVal(md.match(/^title:\s*(.+)$/m)?.[1]) || f.name,
+      key:   parseYamlVal(md.match(/^key:\s*(.+)$/m)?.[1]),
       occasions: parseOccasionStr(md.match(/^occasion:\s*(.+)$/m)?.[1]?.trim() || ''),
       pdf: md.match(/^pdf:\s*(.+)$/m)?.[1]?.trim() || '',
       pdfs: parsePdfsFromMd(md),
@@ -788,7 +795,7 @@ async function loadSongs() {
 
   list.innerHTML = songs.length ? songs.map(s => `
     <div data-song-row data-title="${s.title.toLowerCase()}" data-occasions="${s.occasions.join(',')}"
-      class="flex items-center justify-between px-6 py-3 hover:bg-stone-50">
+      class="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-stone-50 sm:px-6">
       <div class="flex flex-wrap items-center gap-2">
         <span class="font-medium text-stone-900">${s.title}</span>
         ${s.key ? `<span class="text-xs text-stone-400">${s.key}</span>` : ''}
@@ -1000,6 +1007,21 @@ document.getElementById('form-edit-song').addEventListener('submit', async e => 
 // ── Événements ────────────────────────────────────────────────
 let adminEvtsCache = [];
 
+function updateSlotPdfsArea(sel, slotRow) {
+  const pdfsArea = slotRow.querySelector('.slot-pdfs-area');
+  const pdfsList = slotRow.querySelector('.slot-pdfs-list');
+  const pdfPath = sel.value;
+  if (!pdfPath || pdfPath === '__autre__') { pdfsArea.classList.add('hidden'); return; }
+  const song = adminSongsCache.find(s => s.pdf === pdfPath || (s.pdfs && s.pdfs.some(p => p.url === pdfPath)));
+  if (!song) { pdfsArea.classList.add('hidden'); return; }
+  const pdfs = song.pdfs && song.pdfs.length > 1 ? song.pdfs : (song.pdf ? [{ label: '', url: song.pdf }] : []);
+  pdfsList.innerHTML = pdfs.map(p =>
+    `<span class="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-600">
+      ${p.label ? `<span class="font-medium">${p.label}</span> — ` : ''}<span class="text-stone-400">${p.url.split('/').pop()}</span>
+    </span>`).join('');
+  pdfsArea.classList.remove('hidden');
+}
+
 function buildProgramSlots(container, currentProgram, type) {
   const slots = slotsForType(type || 'messe');
   container.innerHTML = slots.map(slot => {
@@ -1007,17 +1029,26 @@ function buildProgramSlots(container, currentProgram, type) {
     const songs = adminSongsCache.filter(s => (isEnPlus || s.occasions.includes(slot.occasion)) && s.pdf).sort((a, b) => a.title.localeCompare(b.title, 'fr'));
     const cur = (currentProgram || {})[slot.key] || '';
     const opts = songs.map(s => `<option value="${s.pdf}"${s.pdf === cur ? ' selected' : ''}>${s.title}</option>`).join('');
-    return `<div class="flex items-center gap-2">
-      <span class="w-36 flex-shrink-0 text-xs font-medium text-stone-600">${slot.label}</span>
-      <select class="slot-select flex-1 rounded-lg border border-stone-300 px-2 py-1.5 text-xs focus:border-blue-700 focus:outline-none" data-slot="${slot.key}" data-occasion="${slot.occasion}" data-label="${slot.label}">
-        <option value="">-- Aucun --</option>${opts}
-        <option value="__autre__">⊕ Chercher un autre chant…</option>
-      </select>
-      <label class="flex-shrink-0 cursor-pointer rounded border border-stone-300 px-2 py-1 text-xs text-stone-500 hover:border-blue-600 hover:text-blue-700 transition-colors">
-        Importer
-        <input type="file" accept=".pdf" class="slot-file hidden" data-slot="${slot.key}" data-occasion="${slot.occasion}" data-label="${slot.label}" />
-      </label>
-      <span class="slot-status w-4 flex-shrink-0 text-xs text-stone-400" data-slot="${slot.key}"></span>
+    return `<div class="slot-row space-y-1">
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="w-full text-xs font-medium text-stone-600 sm:w-36 sm:flex-shrink-0">${slot.label}</span>
+        <select class="slot-select min-w-0 flex-1 rounded-lg border border-stone-300 px-2 py-1.5 text-xs focus:border-blue-700 focus:outline-none" data-slot="${slot.key}" data-occasion="${slot.occasion}" data-label="${slot.label}">
+          <option value="">-- Aucun --</option>${opts}
+          <option value="__autre__">⊕ Chercher un autre chant…</option>
+        </select>
+        <label class="flex-shrink-0 cursor-pointer rounded border border-stone-300 px-2 py-1 text-xs text-stone-500 hover:border-blue-600 hover:text-blue-700 transition-colors">
+          Importer
+          <input type="file" accept=".pdf" class="slot-file hidden" data-slot="${slot.key}" data-occasion="${slot.occasion}" data-label="${slot.label}" />
+        </label>
+        <span class="slot-status w-4 flex-shrink-0 text-xs text-stone-400" data-slot="${slot.key}"></span>
+      </div>
+      <div class="slot-pdfs-area ml-0 hidden sm:ml-36">
+        <div class="slot-pdfs-list mb-1 flex flex-wrap gap-1"></div>
+        <label class="inline-flex cursor-pointer items-center gap-1 rounded border border-dashed border-stone-300 px-2 py-0.5 text-xs text-stone-400 hover:border-blue-500 hover:text-blue-600 transition-colors">
+          + partition
+          <input type="file" accept=".pdf" class="slot-add-pdf hidden" data-slot="${slot.key}" />
+        </label>
+      </div>
     </div>`;
   }).join('');
 
@@ -1049,6 +1080,8 @@ function buildProgramSlots(container, currentProgram, type) {
             if (existing) { existing.selected = true; }
             else if (duplicate.pdf) { sel.appendChild(new Option(duplicate.title, duplicate.pdf, true, true)); }
             statusEl.textContent = '✓';
+            const slotRow = input.closest('.slot-row');
+            if (slotRow) updateSlotPdfsArea(sel, slotRow);
             loadSongs(); if (!alreadyHasOcc) triggerRebuild();
           } catch { statusEl.textContent = '✗'; }
           input.value = '';
@@ -1065,17 +1098,66 @@ function buildProgramSlots(container, currentProgram, type) {
         const opt = new Option(title, pdfPath, true, true);
         sel.appendChild(opt);
         statusEl.textContent = '✓';
+        const slotRow = input.closest('.slot-row');
+        if (slotRow) updateSlotPdfsArea(sel, slotRow);
         loadSongs(); triggerRebuild();
       } catch { statusEl.textContent = '✗'; }
     });
   });
 
   container.querySelectorAll('.slot-select').forEach(sel => {
+    const slotRow = sel.closest('.slot-row');
     sel.addEventListener('change', () => {
       if (sel.value === '__autre__') {
         sel.value = '';
         openSongPicker(sel.dataset.slot, sel.dataset.occasion, sel.dataset.label, container);
       }
+      if (slotRow) updateSlotPdfsArea(sel, slotRow);
+    });
+    if (sel.value && slotRow) updateSlotPdfsArea(sel, slotRow);
+  });
+
+  container.querySelectorAll('.slot-add-pdf').forEach(input => {
+    input.addEventListener('change', async () => {
+      const file = input.files[0]; if (!file) return;
+      const slotRow = input.closest('.slot-row');
+      const sel = slotRow.querySelector('.slot-select');
+      const statusEl = slotRow.querySelector('.slot-status');
+      const pdfPath = sel.value;
+      if (!pdfPath) { input.value = ''; return; }
+      const song = adminSongsCache.find(s => s.pdf === pdfPath);
+      if (!song) { input.value = ''; return; }
+      const label = prompt(`Libellé de la nouvelle partition pour « ${song.title} » (ex. : Guitare, Orgue, 4 voix…) :`, '');
+      if (label === null) { input.value = ''; return; }
+      statusEl.textContent = '…';
+      try {
+        const suffix = label ? `-${slugify(label)}` : `-extra${Date.now()}`;
+        const uploadPath = `uploads/${slugify(song.title)}${suffix}.pdf`;
+        await ghPut(`public/${uploadPath}`, await fileToBase64(file), `partition: ${song.title} (${label || 'extra'})`);
+        const d = await ghGet(`contents/${song.path}`);
+        const md = b64decode(d.content);
+        const existingPdfs = song.pdfs && song.pdfs.length > 0
+          ? song.pdfs.map(p => ({ label: p.label || 'Partition', url: p.url }))
+          : [{ label: 'Partition', url: song.pdf }];
+        const updatedPdfs = [...existingPdfs, { label: label || 'Partition', url: uploadPath }];
+        const pdfsYaml = `pdfs:\n${updatedPdfs.map(p => `  - label: ${yamlStr(p.label)}\n    url: ${p.url}`).join('\n')}`;
+        const parts = md.split(/^---$/m);
+        let fm = parts.length >= 3 ? parts[1] : '\n';
+        fm = fm.replace(/^pdfs:\n(?:  .*\n)*/m, '');
+        if (fm.match(/^pdf:\s*.+$/m)) {
+          fm = fm.replace(/^(pdf:\s*.+)$/m, `$1\n${pdfsYaml}`);
+        } else {
+          fm = fm.trimEnd() + '\n' + pdfsYaml + '\n';
+        }
+        const newMd = `---${fm}---\n${parts.slice(2).join('---')}`;
+        await ghPut(song.path, b64encode(newMd), `partition: ${song.title} +${label || 'extra'}`, d.sha);
+        statusEl.textContent = '✓';
+        setTimeout(() => { if (statusEl.textContent === '✓') statusEl.textContent = ''; }, 2000);
+        await loadSongs();
+        updateSlotPdfsArea(sel, slotRow);
+        triggerRebuild();
+      } catch(err) { statusEl.textContent = '✗'; console.error(err); }
+      input.value = '';
     });
   });
 }
@@ -1184,15 +1266,15 @@ async function loadEvents() {
     const md = b64decode(d.content);
     const ev = {
       path: f.path, sha: d.sha,
-      title:       md.match(/^title:\s*(.+)$/m)?.[1]?.trim().replace(/^"|"$/g,'') || f.name,
+      title:       parseYamlVal(md.match(/^title:\s*(.+)$/m)?.[1]) || f.name,
       date:        md.match(/^date:\s*(.+)$/m)?.[1]?.trim() || '',
       time:        md.match(/^time:\s*"?([^"\n]+)"?$/m)?.[1]?.trim() || '',
-      location:    md.match(/^location:\s*(.+)$/m)?.[1]?.trim() || '',
-      description: md.match(/^description:\s*(.+)$/m)?.[1]?.trim() || '',
+      location:    parseYamlVal(md.match(/^location:\s*(.+)$/m)?.[1]),
+      description: parseYamlVal(md.match(/^description:\s*(.+)$/m)?.[1]),
       type:        md.match(/^type:\s*(.+)$/m)?.[1]?.trim() || 'messe',
-      animateur:   md.match(/^animateur:\s*(.+)$/m)?.[1]?.trim() || '',
-      chef_choeur: md.match(/^chef_choeur:\s*(.+)$/m)?.[1]?.trim() || '',
-      organiste:   md.match(/^organiste:\s*(.+)$/m)?.[1]?.trim() || '',
+      animateur:   parseYamlVal(md.match(/^animateur:\s*(.+)$/m)?.[1]),
+      chef_choeur: parseYamlVal(md.match(/^chef_choeur:\s*(.+)$/m)?.[1]),
+      organiste:   parseYamlVal(md.match(/^organiste:\s*(.+)$/m)?.[1]),
     };
     [...MASS_SLOTS, ...WEDDING_EXTRA_SLOTS, ...BENEDICTION_EXTRA_SLOTS].forEach(s => {
       ev['program_' + s.key] = md.match(new RegExp(`^program_${s.key}:\\s*(.+)$`, 'm'))?.[1]?.trim() || '';
@@ -1210,7 +1292,7 @@ async function loadEvents() {
   evts.sort((a, b) => a.date.localeCompare(b.date));
   adminEvtsCache = evts;
   list.innerHTML = evts.length ? evts.map((ev, idx) => `
-    <div class="flex items-center justify-between px-6 py-3 hover:bg-stone-50">
+    <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-stone-50 sm:px-6">
       <div>
         <span class="font-medium text-stone-900">${ev.title}</span>
         <span class="ml-2 text-xs text-stone-400">${ev.date}${ev.time ? ' à ' + ev.time : ''} — ${ev.location}</span>
@@ -1309,11 +1391,11 @@ function buildAutreSlots(container, entries) {
     const allSongs = adminSongsCache.filter(s => s.pdf).sort((a, b) => a.title.localeCompare(b.title, 'fr'));
     const opts = allSongs.map(s => `<option value="${s.pdf}"${s.pdf === pdf ? ' selected' : ''}>${s.title}</option>`).join('');
     const row = document.createElement('div');
-    row.className = 'autre-entry flex items-center gap-2';
+    row.className = 'autre-entry flex flex-wrap items-center gap-2';
     row.innerHTML = `
       <input type="text" value="${(label || '').replace(/"/g, '&quot;')}" placeholder="Libellé (ex. : Ouverture)"
-        class="autre-label w-36 flex-shrink-0 rounded-lg border border-stone-300 px-2 py-1.5 text-xs focus:border-blue-700 focus:outline-none" />
-      <select class="slot-select flex-1 rounded-lg border border-stone-300 px-2 py-1.5 text-xs focus:border-blue-700 focus:outline-none"
+        class="autre-label w-full flex-shrink-0 rounded-lg border border-stone-300 px-2 py-1.5 text-xs focus:border-blue-700 focus:outline-none sm:w-36" />
+      <select class="slot-select min-w-0 flex-1 rounded-lg border border-stone-300 px-2 py-1.5 text-xs focus:border-blue-700 focus:outline-none"
         data-slot="${slotKey}" data-occasion="" data-label="">
         <option value="">-- Aucun chant --</option>${opts}
         <option value="__autre__">⊕ Chercher un autre chant…</option>

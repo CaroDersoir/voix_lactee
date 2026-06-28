@@ -8,6 +8,7 @@ const base = import.meta.env.DEV
 		? import.meta.env.BASE_URL
 		: import.meta.env.BASE_URL + '/';
 
+const isDev = import.meta.env.DEV;
 const toBaseHref = (path = '') => `${base}${path}`.replace(/([^:]\/)\/+/g, '$1');
 
 const links = [
@@ -15,7 +16,7 @@ const links = [
 	{ href: 'repertoire', label: 'Répertoire' },
 	{ href: 'agenda', label: 'Agenda' },
 	{ href: 'contact', label: 'Contact' },
-	{ href: 'admin/', label: 'Admin' }
+	...(isDev ? [{ href: 'admin/', label: 'Admin' }] : []),
 ];
 ---
 
@@ -27,16 +28,76 @@ const links = [
 		</a>
 		<nav aria-label="Navigation principale">
 			<ul class="flex items-center gap-1 text-base font-extrabold text-stone-600">
-				{
-					links.map((link) => (
-						<li>
-							<a class="rounded-md px-3 py-2 transition hover:bg-blue-50 hover:text-blue-900" href={toBaseHref(link.href)}>
-								{link.label}
-							</a>
-						</li>
-					))
-				}
+				{links.map((link) => (
+					<li>
+						<a class="rounded-md px-3 py-2 transition hover:bg-blue-50 hover:text-blue-900" href={toBaseHref(link.href)}>
+							{link.label}
+						</a>
+					</li>
+				))}
+				<li>
+					<button id="btn-prefs" title="Préférences"
+							class="rounded-full p-2 text-stone-400 transition hover:bg-blue-50 hover:text-blue-900">
+						<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+							 stroke="currentColor" stroke-width="1.5">
+							<path stroke-linecap="round" stroke-linejoin="round"
+								  d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94H9.704c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"/>
+							<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+						</svg>
+					</button>
+				</li>
 			</ul>
 		</nav>
 	</div>
 </header>
+
+<!-- Panneau Préférences -->
+<div id="prefs-panel" class="fixed z-[200] rounded-lg border border-stone-200 bg-white p-4 shadow-lg" style="display:none; min-width:15rem;">
+	<h3 class="mb-3 text-sm font-semibold text-stone-700">Préférences</h3>
+	<p class="mb-2 text-xs font-medium text-stone-500">Ouverture des partitions PDF</p>
+	<div class="space-y-2">
+		<label class="flex cursor-pointer items-center gap-2">
+			<input type="radio" name="pdf-pref" value="modal" class="accent-blue-700"/>
+			<span class="text-sm text-stone-700">Modale (plein écran)</span>
+		</label>
+		<label class="flex cursor-pointer items-center gap-2">
+			<input type="radio" name="pdf-pref" value="tab" class="accent-blue-700"/>
+			<span class="text-sm text-stone-700">Nouvel onglet</span>
+		</label>
+	</div>
+</div>
+
+<script>
+	const prefsBtn = document.getElementById('btn-prefs') as HTMLButtonElement;
+	const prefsPanel = document.getElementById('prefs-panel') as HTMLElement;
+	const pdfPrefRadios = document.querySelectorAll<HTMLInputElement>('input[name="pdf-pref"]');
+
+	const savedPref = localStorage.getItem('vl_pdf_pref') || 'modal';
+	pdfPrefRadios.forEach(r => { r.checked = r.value === savedPref; });
+
+	prefsBtn.addEventListener('click', (e) => {
+		e.stopPropagation();
+		const isOpen = prefsPanel.style.display !== 'none';
+		if (isOpen) {
+			prefsPanel.style.display = 'none';
+		} else {
+			const rect = prefsBtn.getBoundingClientRect();
+			prefsPanel.style.top = `${rect.bottom + 4}px`;
+			prefsPanel.style.right = `${window.innerWidth - rect.right}px`;
+			prefsPanel.style.left = 'auto';
+			prefsPanel.style.display = 'block';
+		}
+	});
+
+	pdfPrefRadios.forEach(r => {
+		r.addEventListener('change', () => {
+			localStorage.setItem('vl_pdf_pref', r.value);
+		});
+	});
+
+	document.addEventListener('click', (e) => {
+		if (!prefsPanel.contains(e.target as Node)) {
+			prefsPanel.style.display = 'none';
+		}
+	});
+</script>
