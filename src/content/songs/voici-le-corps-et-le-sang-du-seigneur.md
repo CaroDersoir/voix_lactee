@@ -7,4 +7,6 @@ pdfs:
     url: uploads/voici-le-corps-et-le-sang-du-seigneur.pdf
   - label: 4 voix
     url: uploads/voici-le-corps-et-le-sang-du-seigneur-4-voix.pdf
+  - label: chacun sa ligne
+    url: uploads/voici-le-corps-et-le-sang-du-seigneur-chacun-sa-ligne.pdf
 ---
