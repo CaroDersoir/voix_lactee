@@ -134,11 +134,17 @@ const pastEvents = allEvents.filter(e => e.data.date < today).reverse();
 			</div>
 
 			<div class="space-y-5 overflow-y-auto px-6 py-5" style="max-height:calc(90vh - 76px);">
-				<div>
-					<p id="detail-datetime" class="text-sm text-stone-500"></p>
-					<p id="detail-location" class="text-sm text-stone-500"></p>
-					<p id="detail-description" class="mt-3 text-stone-700"></p>
-					<div id="detail-team" class="mt-2 hidden flex-wrap gap-4 text-xs text-stone-500"></div>
+				<div class="flex items-start gap-4">
+					<div class="flex-1">
+						<p id="detail-datetime" class="text-sm text-stone-500"></p>
+						<p id="detail-location" class="text-sm text-stone-500"></p>
+						<p id="detail-description" class="mt-3 text-stone-700"></p>
+						<div id="detail-team" class="mt-2 hidden flex-wrap gap-4 text-xs text-stone-500"></div>
+					</div>
+					<button id="btn-merge-pdf" style="display:none; background-color:#D4B86A;" class="flex h-24 w-24 flex-shrink-0 flex-col items-center justify-center rounded-xl text-center text-xs font-bold leading-snug text-black shadow-md transition-colors disabled:opacity-50">
+						<span>C'est l'heure</span>
+						<span>les enfants</span>
+					</button>
 				</div>
 
 				<div id="detail-program-section" class="hidden">
@@ -193,6 +199,7 @@ const pastEvents = allEvents.filter(e => e.data.date < today).reverse();
 
 <script>
 	import JSZip from 'jszip';
+	import { PDFDocument } from 'pdf-lib';
 
 	let currentDetailId: string | null = null;
 	let currentPdfEntries: Array<{ name: string; url: string }> = [];
@@ -311,10 +318,12 @@ const pastEvents = allEvents.filter(e => e.data.date < today).reverse();
 			dlBtn.style.display = 'inline-flex';
 			dlBtn.disabled = false;
 			dlLabel.textContent = 'Télécharger toutes les partitions (ZIP)';
+			(document.getElementById('btn-merge-pdf') as HTMLButtonElement).style.display = 'flex';
 		} else {
 			currentPdfEntries = [];
 			progSection.style.display = 'none';
 			dlBtn.style.display = 'none';
+			(document.getElementById('btn-merge-pdf') as HTMLButtonElement).style.display = 'none';
 		}
 
 		renderSignupsList(id);
@@ -386,6 +395,33 @@ const pastEvents = allEvents.filter(e => e.data.date < today).reverse();
 		} finally {
 			btn.disabled = false;
 			label.textContent = 'Télécharger toutes les partitions (ZIP)';
+		}
+	});
+
+	// ── PDF fusionné ──────────────────────────────────────────
+	document.getElementById('btn-merge-pdf')!.addEventListener('click', async () => {
+		if (!currentPdfEntries.length) return;
+		const btn = document.getElementById('btn-merge-pdf') as HTMLButtonElement;
+		btn.disabled = true;
+		const saved = btn.innerHTML;
+		btn.innerHTML = '<span style="font-size:1.4rem">⏳</span>';
+
+		try {
+			const merged = await PDFDocument.create();
+			for (const { url } of currentPdfEntries) {
+				const res = await fetch(url);
+				const buf = await res.arrayBuffer();
+				const pdf = await PDFDocument.load(buf, { ignoreEncryption: true });
+				const pages = await merged.copyPages(pdf, pdf.getPageIndices());
+				pages.forEach(p => merged.addPage(p));
+			}
+			const bytes = await merged.save();
+			const blob = new Blob([bytes], { type: 'application/pdf' });
+			const url = URL.createObjectURL(blob);
+			openPdf(url);
+		} finally {
+			btn.disabled = false;
+			btn.innerHTML = saved;
 		}
 	});
 

@@ -1289,10 +1289,14 @@ async function loadEvents() {
     ev.programAutre = autreEntries;
     return ev;
   }));
-  evts.sort((a, b) => a.date.localeCompare(b.date));
-  adminEvtsCache = evts;
-  list.innerHTML = evts.length ? evts.map((ev, idx) => `
-    <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-stone-50 sm:px-6">
+  const todayStr = new Date().toISOString().split('T')[0];
+  const upcoming = evts.filter(e => e.date >= todayStr).sort((a, b) => a.date.localeCompare(b.date));
+  const past     = evts.filter(e => e.date <  todayStr).sort((a, b) => b.date.localeCompare(a.date));
+  const sorted   = [...upcoming, ...past];
+  adminEvtsCache = sorted;
+
+  function evtRow(ev, idx, isPast) {
+    return `<div class="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-stone-50 sm:px-6${isPast ? ' opacity-50' : ''}">
       <div>
         <span class="font-medium text-stone-900">${ev.title}</span>
         <span class="ml-2 text-xs text-stone-400">${ev.date}${ev.time ? ' à ' + ev.time : ''} — ${ev.location}</span>
@@ -1303,7 +1307,22 @@ async function loadEvents() {
         <button data-path="${ev.path}" data-sha="${ev.sha}" data-name="${ev.title}"
           class="btn-del-evt text-xs font-medium text-red-400 hover:text-red-600 transition-colors">Supprimer</button>
       </div>
-    </div>`).join('') : '<p class="px-6 py-5 text-stone-400 italic">Aucun événement.</p>';
+    </div>`;
+  }
+
+  const separator = `<div class="flex items-center gap-3 px-4 py-2 sm:px-6">
+    <div class="h-px flex-1 bg-stone-200"></div>
+    <span class="text-xs font-semibold uppercase tracking-widest text-stone-400">Passés</span>
+    <div class="h-px flex-1 bg-stone-200"></div>
+  </div>`;
+
+  if (!sorted.length) {
+    list.innerHTML = '<p class="px-6 py-5 text-stone-400 italic">Aucun événement.</p>';
+  } else {
+    list.innerHTML =
+      upcoming.map((ev, i) => evtRow(ev, i, false)).join('') +
+      (past.length ? separator + past.map((ev, i) => evtRow(ev, upcoming.length + i, true)).join('') : '');
+  }
 
   list.querySelectorAll('.btn-mod-evt').forEach(btn => {
     btn.addEventListener('click', () => openEditEventModal(adminEvtsCache[parseInt(btn.dataset.idx)]));
