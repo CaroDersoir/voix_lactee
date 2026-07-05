@@ -495,6 +495,9 @@ const base = import.meta.env.DEV
   </div>
 </div>
 
+<!-- Toast de notification -->
+<div id="admin-toast" class="fixed right-4 top-4 z-[120] hidden max-w-xs rounded-xl px-4 py-3 text-sm font-medium shadow-lg transition-all"></div>
+
 <!-- Modale de confirmation suppression partition -->
 <div id="confirm-delete-modal" class="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 p-4" style="display:none;">
   <div class="w-full max-w-sm rounded-xl bg-white shadow-2xl">
@@ -526,6 +529,16 @@ const REPO   = 'voix_lactee';
 const BRANCH = 'main';
 const TOKEN  = GH_TOKEN;
 const CREDS  = { user: 'admin', pass: 'jcroispasnon' };
+
+let toastTimer = null;
+function showToast(msg, type = 'ok') {
+  const el = document.getElementById('admin-toast');
+  el.textContent = msg;
+  el.className = `fixed right-4 top-4 z-[120] max-w-xs rounded-xl px-4 py-3 text-sm font-medium shadow-lg ${type === 'ok' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`;
+  el.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.add('hidden'), 4000);
+}
 
 function confirmDelete(filename) {
   return new Promise(resolve => {
@@ -799,10 +812,10 @@ async function loadSongs() {
       occasions: parseOccasionStr(md.match(/^occasion:\s*(.+)$/m)?.[1]?.trim() || ''),
       pdf: md.match(/^pdf:\s*(.+)$/m)?.[1]?.trim() || '',
       pdfs: parsePdfsFromMd(md),
-      audio_soprano: md.match(/^audio_soprano:\s*(.+)$/m)?.[1]?.trim() || '',
-      audio_alto:    md.match(/^audio_alto:\s*(.+)$/m)?.[1]?.trim() || '',
-      audio_tenor:   md.match(/^audio_tenor:\s*(.+)$/m)?.[1]?.trim() || '',
-      audio_basse:   md.match(/^audio_basse:\s*(.+)$/m)?.[1]?.trim() || '',
+      audio_soprano: parseYamlVal(md.match(/^audio_soprano:\s*(.+)$/m)?.[1]) || '',
+      audio_alto:    parseYamlVal(md.match(/^audio_alto:\s*(.+)$/m)?.[1])    || '',
+      audio_tenor:   parseYamlVal(md.match(/^audio_tenor:\s*(.+)$/m)?.[1])   || '',
+      audio_basse:   parseYamlVal(md.match(/^audio_basse:\s*(.+)$/m)?.[1])   || '',
       bodyContent: bodyParts.length >= 3 ? bodyParts.slice(2).join('---').trim() : '' };
   }));
   songs.sort((a, b) => a.title.localeCompare(b.title, 'fr'));
@@ -1440,7 +1453,9 @@ async function submitEvt(editPath, editSha) {
     lines.push('---', '');
     const filePath = isEdit ? editPath : `src/content/events/${(date || new Date().toISOString().slice(0,10))}-${slugify(title)}.md`;
     await ghPut(filePath, b64encode(lines.join('\n')), `${isEdit ? 'modif' : 'ajout'} événement: ${title}`, isEdit ? editSha : undefined);
-    setStatus(statusId, 'ok', `✓ ${isEdit ? 'Modifié' : 'Ajouté'}. Mise à jour dans ~2 min.`);
+    const okMsg = `✓ Événement ${isEdit ? 'modifié' : 'ajouté'}. Mise à jour dans ~2 min.`;
+    setStatus(statusId, 'ok', okMsg);
+    showToast(okMsg, 'ok');
     setTimeout(() => {
       if (isEdit) { closeEditEventModal(); }
       else {
@@ -1449,7 +1464,7 @@ async function submitEvt(editPath, editSha) {
       }
       loadEvents(); triggerRebuild();
     }, 1000);
-  } catch(err) { setStatus(statusId, 'error', 'Erreur : ' + err.message); }
+  } catch(err) { setStatus(statusId, 'error', 'Erreur : ' + err.message); showToast('Erreur : ' + err.message, 'error'); }
 }
 
 async function loadEvents() {
@@ -1565,6 +1580,7 @@ function openEditEventModal(ev) {
   document.body.style.overflow = 'hidden';
 }
 function closeEditEventModal() {
+  document.activeElement?.blur();
   editEvtModal.style.display = 'none';
   document.body.style.overflow = '';
 }

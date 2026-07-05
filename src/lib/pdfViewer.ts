@@ -1,10 +1,12 @@
 import * as pdfjsLib from 'pdfjs-dist';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 
+// pdfjs-dist v3 utilise un worker classique (.js, pas .mjs).
 // Le suffixe ?url dit à Vite d'émettre le fichier comme asset statique et de retourner son URL.
-// C'est la seule façon fiable de pointer vers le worker avec Vite/Astro — évite les erreurs
-// "Setting up fake worker" ou "Cannot use import.meta" dans Samsung Internet et autres.
-import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+// Cette approche est universellement compatible (Samsung Internet, vieux Android, Firefox, Safari).
+// v6 utilisait { type:'module' } qui nécessite le support des module-workers — absent sur de
+// nombreux navigateurs mobiles.
+import workerUrl from 'pdfjs-dist/build/pdf.worker.min.js?url';
 pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
 
 let _pdf: PDFDocumentProxy | null = null;
@@ -33,7 +35,7 @@ async function renderPage(
 
   container.appendChild(canvas);
   await page.render({ canvasContext: canvas.getContext('2d')!, viewport }).promise;
-  page.cleanup(); // libère la mémoire de la page après rendu
+  page.cleanup();
 }
 
 /**
@@ -67,7 +69,7 @@ export async function openPdfViewer(
       pageInfoEl.style.display = '';
     }
   } catch (err) {
-    console.error('[pdfViewer]', err);
+    console.error('[pdfViewer] échec chargement', url, err);
     container.innerHTML =
       '<p style="padding:1rem;color:#dc2626;font-size:0.875rem;">Impossible de charger ce PDF.</p>';
   } finally {
