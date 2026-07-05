@@ -8,12 +8,19 @@ const events    = await getCollection('events');
 const allSongs  = await getCollection('songs');
 const songsByPdf: Record<string, string> = {};
 const songMultiPdfsMap: Record<string, Array<{label: string, url: string}>> = {};
+const songAudiosMap: Record<string, Record<string, string>> = {};
 allSongs.forEach(s => {
   if (s.data.pdf) {
     songsByPdf[s.data.pdf] = s.data.title;
     if (s.data.pdfs && s.data.pdfs.length > 1) {
       songMultiPdfsMap[s.data.pdf] = s.data.pdfs;
     }
+    const entry: Record<string, string> = {};
+    if (s.data.audio_soprano) entry.s = s.data.audio_soprano;
+    if (s.data.audio_alto) entry.a = s.data.audio_alto;
+    if (s.data.audio_tenor) entry.t = s.data.audio_tenor;
+    if (s.data.audio_basse) entry.b = s.data.audio_basse;
+    if (Object.keys(entry).length > 0) songAudiosMap[s.data.pdf] = entry;
   }
 });
 const today = new Date();
@@ -102,18 +109,31 @@ const pastEvents = allEvents.filter(e => e.data.date < today).reverse();
 		))}
 	</div>
 
-	<div id="songs-data" data-map={JSON.stringify(songsByPdf)} data-multi-pdfs={JSON.stringify(songMultiPdfsMap)} data-base={base} hidden></div>
+	<div id="songs-data" data-map={JSON.stringify(songsByPdf)} data-multi-pdfs={JSON.stringify(songMultiPdfsMap)} data-audios={JSON.stringify(songAudiosMap)} data-base={base} hidden></div>
 
-	<!-- Visionneuse PDF -->
+	<!-- Visionneuse PDF (rendu canvas via pdfjs-dist — compatible tous navigateurs/Android) -->
 	<div id="pdf-overlay" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/75 p-3" style="display: none;">
-		<div class="relative flex h-[95vh] w-[95vw] flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
-			<button id="btn-close-pdf" class="absolute right-4 top-4 z-10 flex items-center gap-2 rounded-lg bg-blue-900 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-blue-700">
-				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-					<path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+		<div class="flex h-[95vh] w-[95vw] flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
+			<!-- Barre d'outils fixe -->
+			<div class="flex shrink-0 items-center gap-3 border-b border-stone-200 px-4 py-3">
+				<button id="btn-close-pdf" class="flex items-center gap-2 rounded-lg bg-blue-900 px-4 py-2 text-sm font-semibold text-white shadow transition-colors hover:bg-blue-700">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+						<path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+					</svg>
+					Fermer
+				</button>
+				<span id="pdf-page-info" class="ml-auto text-xs text-stone-400" style="display:none"></span>
+			</div>
+			<!-- Indicateur de chargement -->
+			<div id="pdf-loading" class="flex shrink-0 items-center gap-2 px-4 py-2 text-sm text-stone-400" style="display:none">
+				<svg class="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+					<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+					<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
 				</svg>
-				Fermer
-			</button>
-			<iframe id="pdf-frame" src="" class="h-full w-full border-0"></iframe>
+				Chargement…
+			</div>
+			<!-- Zone de rendu (scroll continu) -->
+			<div id="pdf-canvas-container" class="flex-1 overflow-y-auto bg-stone-100 p-3"></div>
 		</div>
 	</div>
 
@@ -122,7 +142,7 @@ const pastEvents = allEvents.filter(e => e.data.date < today).reverse();
 
 	<!-- Modale détail + inscription -->
 	<div id="modal-detail" class="fixed inset-0 z-50 items-center justify-center bg-black/50 p-4" style="display:none;">
-		<div class="relative w-full max-w-2xl rounded-xl bg-white shadow-xl" style="max-height:90vh;">
+		<div class="relative w-full max-w-4xl rounded-xl bg-white shadow-xl" style="max-height:90vh;">
 
 			<div class="flex items-center justify-between border-b border-stone-200 px-6 py-4">
 				<h2 id="detail-title" class="text-xl font-semibold text-blue-950"></h2>
@@ -148,8 +168,9 @@ const pastEvents = allEvents.filter(e => e.data.date < today).reverse();
 				</div>
 
 				<div id="detail-program-section" class="hidden">
-					<h3 class="mb-3 border-b border-stone-100 pb-1 text-base font-semibold text-stone-800">Programme</h3>
-					<div id="detail-program" class="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm"></div>
+					<h3 class="mb-2 border-b border-stone-100 pb-1 text-base font-semibold text-stone-800">Programme</h3>
+					<div id="detail-voice-btns" class="mb-2 flex-wrap gap-1.5" style="display:none;"></div>
+					<div id="detail-program" class="grid grid-cols-1 gap-y-1.5 text-sm sm:grid-cols-2 sm:gap-x-6"></div>
 				<button id="btn-download-zip" class="mt-3 hidden items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 disabled:opacity-50">
 					<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 						<path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -195,6 +216,25 @@ const pastEvents = allEvents.filter(e => e.data.date < today).reverse();
 		</div>
 	</div>
 
+	<!-- Visionneuse YouTube -->
+	<div id="yt-overlay" class="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-3" style="display:none;">
+		<div class="flex w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-black shadow-2xl">
+			<div class="flex items-center gap-2 px-3 py-2">
+				<span id="yt-track-info" class="flex-1 truncate text-xs text-white/60"></span>
+				<button id="btn-next-yt" class="hidden rounded bg-white/10 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-white/20">Suivant ▶</button>
+				<button id="btn-close-yt" class="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-2 text-sm font-semibold text-white backdrop-blur transition-colors hover:bg-white/20">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+						<path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+					</svg>
+					Fermer
+				</button>
+			</div>
+			<div style="padding-top:56.25%;position:relative;">
+				<div id="yt-player" class="absolute inset-0"></div>
+			</div>
+		</div>
+	</div>
+
 </Layout>
 
 <script>
@@ -203,6 +243,78 @@ const pastEvents = allEvents.filter(e => e.data.date < today).reverse();
 
 	let currentDetailId: string | null = null;
 	let currentPdfEntries: Array<{ name: string; url: string }> = [];
+	const modalAudio = new Audio();
+	let currentModalAudioBtn: HTMLButtonElement | null = null;
+
+	// ── Overlay YouTube + playlist par voix ───────────────────
+	const ytOverlay = document.getElementById('yt-overlay') as HTMLElement;
+	const ytTrackInfo = document.getElementById('yt-track-info') as HTMLElement;
+	const btnNextYt = document.getElementById('btn-next-yt') as HTMLButtonElement;
+
+	let ytPlayer: any = null;
+	let videoQueue: Array<{id: string; title: string}> = [];
+	let queueIndex = 0;
+
+	function getYouTubeId(url: string): string | null {
+		const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+		return m ? m[1] : null;
+	}
+
+	function updateTrackInfo() {
+		const isPlaylist = videoQueue.length > 1;
+		const item = videoQueue[queueIndex];
+		ytTrackInfo.textContent = isPlaylist
+			? `${queueIndex + 1} / ${videoQueue.length}${item?.title ? ' — ' + item.title : ''}`
+			: (item?.title || '');
+		btnNextYt.classList.toggle('hidden', !isPlaylist || queueIndex >= videoQueue.length - 1);
+	}
+
+	function playQueueItem(index: number) {
+		queueIndex = index;
+		updateTrackInfo();
+		ytPlayer?.loadVideoById(videoQueue[index]?.id);
+	}
+
+	function playNextInQueue() {
+		if (queueIndex + 1 < videoQueue.length) playQueueItem(queueIndex + 1);
+		else closeYouTubeOverlay();
+	}
+
+	function showOverlayAndPlay() {
+		ytOverlay.style.display = 'flex';
+		document.body.style.overflow = 'hidden';
+		updateTrackInfo();
+		if (ytPlayer?.loadVideoById) {
+			ytPlayer.loadVideoById(videoQueue[queueIndex]?.id);
+			return;
+		}
+		(window as any).onYouTubeIframeAPIReady = () => {
+			ytPlayer = new (window as any).YT.Player('yt-player', {
+				playerVars: { autoplay: 1, rel: 0, modestbranding: 1 },
+				events: {
+					onReady: () => ytPlayer.loadVideoById(videoQueue[queueIndex]?.id),
+					onStateChange: (e: any) => { if (e.data === 0) playNextInQueue(); }
+				}
+			});
+		};
+		if ((window as any).YT?.Player) {
+			(window as any).onYouTubeIframeAPIReady();
+		} else {
+			const tag = document.createElement('script');
+			tag.src = 'https://www.youtube.com/iframe_api';
+			document.head.appendChild(tag);
+		}
+	}
+
+	function closeYouTubeOverlay() {
+		ytOverlay.style.display = 'none';
+		ytPlayer?.stopVideo?.();
+		document.body.style.overflow = '';
+	}
+
+	document.getElementById('btn-close-yt')!.addEventListener('click', closeYouTubeOverlay);
+	btnNextYt.addEventListener('click', playNextInQueue);
+	ytOverlay.addEventListener('click', (e) => { if (e.target === ytOverlay) closeYouTubeOverlay(); });
 
 	function loadSignups(id: string): any[] { try { return JSON.parse(localStorage.getItem('vl_signups_' + id) || '[]'); } catch { return []; } }
 	function saveSignups(id: string, d: any[]) { localStorage.setItem('vl_signups_' + id, JSON.stringify(d)); }
@@ -232,6 +344,20 @@ const pastEvents = allEvents.filter(e => e.data.date < today).reverse();
 	const songsMap: Record<string, string> = JSON.parse(songsDataEl?.dataset.map || '{}');
 	const multiPdfsMap: Record<string, Array<{label: string, url: string}>> = JSON.parse(songsDataEl?.dataset.multiPdfs || '{}');
 	const base = songsDataEl?.dataset.base || '/';
+	const audiosMap: Record<string, Record<string, string>> = JSON.parse(songsDataEl?.dataset.audios || '{}');
+
+	function makeVoiceButtons(pdfPath: string, songTitle = ''): string {
+		const songAudios = audiosMap[pdfPath] || {};
+		const VNAMES: Record<string, string> = {s:'Soprano', a:'Alto', t:'Ténor', b:'Basse'};
+		return ['s','a','t','b'].map(voice => {
+			const ap = songAudios[voice];
+			if (!ap) return '';
+			const ext = ap.startsWith('http://') || ap.startsWith('https://');
+			const url = ext ? ap : `${base}${ap.replace(/^\/+/, '')}`;
+			const cls = ext ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-blue-50 text-blue-700 hover:bg-blue-100';
+			return `<button class="agenda-audio-btn flex-shrink-0 inline-flex h-5 w-5 items-center justify-center rounded-full ${cls} text-xs font-bold" data-audio-url="${url}" data-is-external="${ext}" data-voice="${voice}" data-song-title="${songTitle.replace(/"/g, '&quot;')}" title="${VNAMES[voice]}">${voice.toUpperCase()}</button>`;
+		}).join('');
+	}
 
 	const SLOT_LABELS: Record<string, string> = {
 		entree_maries: 'Entrée des mariés',
@@ -304,16 +430,34 @@ const pastEvents = allEvents.filter(e => e.data.date < today).reverse();
 					return `<div class="flex items-center gap-1.5">
 						<span class="w-32 flex-shrink-0 text-xs font-medium text-stone-500">${SLOT_LABELS[k] ?? k}</span>
 						<span class="truncate text-xs text-stone-800">${songTitle}</span>
-						<button class="agenda-pdf-btn flex-shrink-0 text-xs text-blue-600 hover:underline" data-pdfs="${pdfsAttr}" title="Choisir la partition">PDF ▾</button>
+						${makeVoiceButtons(v, songTitle)}
+						<button class="agenda-pdf-btn flex-shrink-0 rounded px-1.5 py-0.5 text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100" data-pdfs="${pdfsAttr}" title="Choisir la partition">PDF ▾</button>
 					</div>`;
 				}
 				currentPdfEntries.push({ name: songTitle || v.split('/').pop() || k, url: pdfUrl });
 				return `<div class="flex items-center gap-1.5">
 					<span class="w-32 flex-shrink-0 text-xs font-medium text-stone-500">${SLOT_LABELS[k] ?? k}</span>
 					<span class="truncate text-xs text-stone-800">${songTitle}</span>
-					${v ? `<button class="agenda-pdf-btn flex-shrink-0 text-xs text-blue-600 hover:underline" data-url="${pdfUrl}" title="Voir la partition">PDF</button>` : ''}
+					${makeVoiceButtons(v, songTitle)}
+					${v ? `<button class="agenda-pdf-btn flex-shrink-0 rounded px-1.5 py-0.5 text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100" data-url="${pdfUrl}" title="Voir la partition">PDF</button>` : ''}
 				</div>`;
 			}).join('');
+
+			// Boutons "jouer toute la voix"
+			const voiceBtnsEl = document.getElementById('detail-voice-btns') as HTMLElement;
+			const VFULL: Record<string, string> = {s:'Soprano', a:'Alto', t:'Ténor', b:'Basse'};
+			const voicesPresent = new Set<string>();
+			progEntries.forEach(([, v]) => { ['s','a','t','b'].forEach(voice => { if ((audiosMap[v] || {})[voice]) voicesPresent.add(voice); }); });
+			if (voicesPresent.size > 0) {
+				voiceBtnsEl.innerHTML = ['s','a','t','b'].filter(v => voicesPresent.has(v))
+					.map(v => `<button class="voice-playlist-btn rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-600 transition-colors hover:bg-red-100" data-voice="${v}">▶ ${VFULL[v]}</button>`)
+					.join('');
+				voiceBtnsEl.style.display = 'flex';
+			} else {
+				voiceBtnsEl.innerHTML = '';
+				voiceBtnsEl.style.display = 'none';
+			}
+
 			progSection.style.display = 'block';
 			dlBtn.style.display = 'inline-flex';
 			dlBtn.disabled = false;
@@ -333,6 +477,8 @@ const pastEvents = allEvents.filter(e => e.data.date < today).reverse();
 	}
 
 	function closeDetail() {
+		modalAudio.pause();
+		if (currentModalAudioBtn) { currentModalAudioBtn.classList.remove('ring-2', 'ring-blue-700', 'ring-offset-1'); currentModalAudioBtn = null; }
 		document.getElementById('modal-detail')!.style.display = 'none';
 		document.body.style.overflow = '';
 		currentDetailId = null;
@@ -426,20 +572,27 @@ const pastEvents = allEvents.filter(e => e.data.date < today).reverse();
 	});
 
 	// ── Visionneuse PDF ────────────────────────────────────────
-	const pdfOverlay = document.getElementById('pdf-overlay') as HTMLElement;
-	const pdfFrame   = document.getElementById('pdf-frame')   as HTMLIFrameElement;
+	import { openPdfViewer, closePdfViewer } from '../lib/pdfViewer';
+
+	const pdfOverlay        = document.getElementById('pdf-overlay')         as HTMLElement;
+	const pdfCanvasContainer = document.getElementById('pdf-canvas-container') as HTMLElement;
+	const pdfLoading        = document.getElementById('pdf-loading')          as HTMLElement;
+	const pdfPageInfo       = document.getElementById('pdf-page-info')        as HTMLElement;
 
 	function openPdf(url: string) {
 		const pref = localStorage.getItem('vl_pdf_pref') || 'modal';
 		if (pref === 'tab') {
 			window.open(url, '_blank', 'noopener');
 		} else {
-			pdfFrame.src = url;
 			pdfOverlay.style.display = 'flex';
+			openPdfViewer(url, pdfCanvasContainer, pdfLoading, pdfPageInfo);
 		}
 	}
 
-	function closePdf() { pdfOverlay.style.display = 'none'; pdfFrame.src = ''; }
+	function closePdf() {
+		pdfOverlay.style.display = 'none';
+		closePdfViewer();
+	}
 	document.getElementById('btn-close-pdf')!.addEventListener('click', closePdf);
 	pdfOverlay.addEventListener('click', (e) => { if (e.target === pdfOverlay) closePdf(); });
 
@@ -467,6 +620,54 @@ const pastEvents = allEvents.filter(e => e.data.date < today).reverse();
 		if (!pdfPicker.contains(e.target as Node)) {
 			pdfPicker.style.display = 'none';
 		}
+	});
+
+	// ── Boutons voix dans la modale ───────────────────────────
+	document.getElementById('modal-detail')!.addEventListener('click', (e) => {
+		const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('.agenda-audio-btn');
+		if (btn) {
+			e.stopPropagation();
+			const url = btn.dataset.audioUrl!;
+			const isExternal = btn.dataset.isExternal === 'true';
+			if (isExternal) {
+				const id = getYouTubeId(url);
+				if (id) { videoQueue = [{id, title: btn.dataset.songTitle || ''}]; queueIndex = 0; showOverlayAndPlay(); }
+				else window.open(url, '_blank', 'noopener');
+				return;
+			}
+			if (currentModalAudioBtn === btn && !modalAudio.paused) {
+				modalAudio.pause();
+				btn.classList.remove('ring-2', 'ring-blue-700', 'ring-offset-1');
+				currentModalAudioBtn = null;
+			} else {
+				if (currentModalAudioBtn) currentModalAudioBtn.classList.remove('ring-2', 'ring-blue-700', 'ring-offset-1');
+				modalAudio.src = url;
+				modalAudio.play();
+				btn.classList.add('ring-2', 'ring-blue-700', 'ring-offset-1');
+				currentModalAudioBtn = btn;
+			}
+			return;
+		}
+	});
+	modalAudio.addEventListener('ended', () => {
+		if (currentModalAudioBtn) { currentModalAudioBtn.classList.remove('ring-2', 'ring-blue-700', 'ring-offset-1'); currentModalAudioBtn = null; }
+	});
+
+	document.getElementById('detail-voice-btns')!.addEventListener('click', (e) => {
+		const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('.voice-playlist-btn');
+		if (!btn) return;
+		const voice = btn.dataset.voice!;
+		const queue: Array<{id: string; title: string}> = [];
+		document.querySelectorAll<HTMLButtonElement>(`#detail-program .agenda-audio-btn[data-voice="${voice}"]`).forEach(ab => {
+			if (ab.dataset.isExternal === 'true') {
+				const id = getYouTubeId(ab.dataset.audioUrl!);
+				if (id) queue.push({id, title: ab.dataset.songTitle || ''});
+			}
+		});
+		if (!queue.length) return;
+		videoQueue = queue;
+		queueIndex = 0;
+		showOverlayAndPlay();
 	});
 
 	document.getElementById('modal-detail')!.addEventListener('click', (e) => {

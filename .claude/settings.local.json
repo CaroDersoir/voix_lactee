@@ -9,7 +9,11 @@
       "Bash(Remove-Item -Force \"C:\\\\Users\\\\Caroline\\\\Documents\\\\site_web\\\\voix_lactee\\\\public\\\\admin\\\\config.yml\")",
       "Bash(Remove-Item -Force \"C:\\\\Users\\\\Caroline\\\\Documents\\\\site_web\\\\voix_lactee\\\\public\\\\admin\")",
       "Bash(npm install *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(xargs wc -l)",
+      "Bash(node -e \"const p = require\\('./node_modules/pdfjs-dist/package.json'\\); console.log\\(p.version\\)\")",
+      "Bash(python3 -c ' *)",
+      "Bash(python3)"
     ]
   }
 }
