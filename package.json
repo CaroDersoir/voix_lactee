@@ -14,8 +14,7 @@
   "dependencies": {
     "astro": "^6.3.1",
     "jszip": "^3.10.1",
-    "pdf-lib": "^1.17.1",
-    "pdfjs-dist": "^3.11.174"
+    "pdf-lib": "^1.17.1"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.0",
