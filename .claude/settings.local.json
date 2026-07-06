@@ -26,7 +26,8 @@
       "Bash(git pull *)",
       "Bash(Remove-Item *)",
       "WebSearch",
-      "Bash(git status *)"
+      "Bash(git status *)",
+      "Bash(node -e \"const s = require\\('sharp'\\); console.log\\('sharp ok'\\);\")"
     ]
   }
 }
