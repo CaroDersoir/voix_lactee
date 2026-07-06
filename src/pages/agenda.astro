@@ -114,13 +114,26 @@ const pastEvents = allEvents.filter(e => e.data.date < today).reverse();
 	<!-- Visionneuse PDF -->
 	<div id="pdf-overlay" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/75 p-3" style="display: none;">
 		<div class="relative flex h-[95vh] w-[95vw] flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
-			<button id="btn-close-pdf" class="absolute right-4 top-4 z-10 flex items-center gap-2 rounded-lg bg-blue-900 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-blue-700">
-				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-					<path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-				</svg>
-				Fermer
-			</button>
-			<iframe id="pdf-frame" src="" class="h-full w-full border-0"></iframe>
+			<div class="flex shrink-0 items-center justify-between border-b border-stone-200 px-4 py-3">
+				<div class="flex items-center gap-2">
+					<span id="pdf-status" class="text-sm text-stone-500">Chargement…</span>
+					<button id="pdf-zoom-out" class="flex h-7 w-7 items-center justify-center rounded border border-stone-300 text-lg leading-none text-stone-600 hover:bg-stone-100" title="Réduire">−</button>
+					<button id="pdf-zoom-in"  class="flex h-7 w-7 items-center justify-center rounded border border-stone-300 text-lg leading-none text-stone-600 hover:bg-stone-100" title="Agrandir">+</button>
+				</div>
+				<div class="flex items-center gap-2">
+					<a id="pdf-open-tab" href="" target="_blank" rel="noopener"
+					   class="flex items-center gap-1.5 rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-600 transition-colors hover:bg-stone-50">
+						Ouvrir dans un onglet
+					</a>
+					<button id="btn-close-pdf" class="flex items-center gap-2 rounded-lg bg-blue-900 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-blue-700">
+						<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+							<path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+						</svg>
+						Fermer
+					</button>
+				</div>
+			</div>
+			<div id="pdf-container" class="flex flex-1 flex-col items-center gap-4 overflow-y-auto bg-stone-100 p-4"></div>
 		</div>
 	</div>
 
@@ -225,6 +238,8 @@ const pastEvents = allEvents.filter(e => e.data.date < today).reverse();
 </Layout>
 
 <script>
+	import * as pdfjsLib from 'pdfjs-dist';
+	pdfjsLib.GlobalWorkerOptions.workerSrc = import.meta.env.BASE_URL + 'pdf.worker.min.mjs';
 	import JSZip from 'jszip';
 	import { PDFDocument } from 'pdf-lib';
 
@@ -558,21 +573,79 @@ const pastEvents = allEvents.filter(e => e.data.date < today).reverse();
 		}
 	});
 
-	// ── Visionneuse PDF ────────────────────────────────────────
-	const pdfOverlay = document.getElementById('pdf-overlay') as HTMLElement;
-	const pdfFrame   = document.getElementById('pdf-frame')   as HTMLIFrameElement;
+	// ── Visionneuse PDF (pdfjs-dist) ──────────────────────────
+	const pdfOverlay   = document.getElementById('pdf-overlay')   as HTMLElement;
+	const pdfContainer = document.getElementById('pdf-container') as HTMLElement;
+	const pdfStatus    = document.getElementById('pdf-status')    as HTMLElement;
+	const pdfOpenTab   = document.getElementById('pdf-open-tab')  as HTMLAnchorElement;
+	let pdfLoadingTask: any = null;
+	let pdfZoom = 1.0;
+	const pdfPages: Array<{el: HTMLCanvasElement; w: number; h: number}> = [];
 
-	function openPdf(url: string) {
-		const pref = localStorage.getItem('vl_pdf_pref') || 'modal';
-		if (pref === 'tab') {
-			window.open(url, '_blank', 'noopener');
-		} else {
-			pdfFrame.src = url;
-			pdfOverlay.style.display = 'flex';
+	function applyZoom() {
+		pdfPages.forEach(p => {
+			p.el.style.width  = `${p.w * pdfZoom}px`;
+			p.el.style.height = `${p.h * pdfZoom}px`;
+		});
+	}
+
+	document.getElementById('pdf-zoom-in')!.addEventListener('click', () => {
+		pdfZoom = Math.min(3, pdfZoom * 1.25);
+		applyZoom();
+	});
+	document.getElementById('pdf-zoom-out')!.addEventListener('click', () => {
+		pdfZoom = Math.max(0.25, pdfZoom / 1.25);
+		applyZoom();
+	});
+
+	async function openPdf(url: string) {
+		if (pdfLoadingTask) pdfLoadingTask.destroy();
+		pdfContainer.innerHTML = '';
+		pdfPages.length = 0;
+		pdfZoom = 1.0;
+		pdfStatus.textContent = 'Chargement…';
+		pdfOpenTab.href = url;
+		pdfOverlay.style.display = 'flex';
+		document.body.style.overflow = 'hidden';
+		try {
+			pdfLoadingTask = pdfjsLib.getDocument(url);
+			const pdf = await pdfLoadingTask.promise;
+			const w = Math.max(pdfContainer.clientWidth - 32, 200);
+			for (let n = 1; n <= pdf.numPages; n++) {
+				const page = await pdf.getPage(n);
+				const base = page.getViewport({ scale: 1 });
+				const scale = Math.min(w / base.width, 3);
+				const vp = page.getViewport({ scale });
+				const dpr = window.devicePixelRatio || 1;
+				const canvas = document.createElement('canvas');
+				canvas.width  = Math.floor(vp.width  * dpr);
+				canvas.height = Math.floor(vp.height * dpr);
+				canvas.style.width  = `${vp.width}px`;
+				canvas.style.height = `${vp.height}px`;
+				canvas.className = 'max-w-none shadow-md';
+				pdfContainer.appendChild(canvas);
+				pdfPages.push({ el: canvas, w: vp.width, h: vp.height });
+				const ctx = canvas.getContext('2d')!;
+				ctx.scale(dpr, dpr);
+				await page.render({ canvasContext: ctx, viewport: vp }).promise;
+			}
+			pdfStatus.textContent = `${pdf.numPages} page${pdf.numPages > 1 ? 's' : ''}`;
+		} catch (err: any) {
+			if (err?.name !== 'RenderingCancelledException') {
+				console.error('[pdfjs]', err);
+				pdfStatus.textContent = 'Erreur';
+				pdfContainer.innerHTML = `<p class="p-4 text-red-500">Impossible de charger le PDF.<br><code class="text-xs">${err?.message ?? err}</code></p>`;
+			}
 		}
 	}
 
-	function closePdf() { pdfOverlay.style.display = 'none'; pdfFrame.src = ''; }
+	function closePdf() {
+		pdfOverlay.style.display = 'none';
+		pdfContainer.innerHTML = '';
+		pdfPages.length = 0;
+		if (pdfLoadingTask) { pdfLoadingTask.destroy(); pdfLoadingTask = null; }
+		document.body.style.overflow = '';
+	}
 	document.getElementById('btn-close-pdf')!.addEventListener('click', closePdf);
 	pdfOverlay.addEventListener('click', (e) => { if (e.target === pdfOverlay) closePdf(); });
 

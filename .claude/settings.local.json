@@ -27,7 +27,14 @@
       "Bash(Remove-Item *)",
       "WebSearch",
       "Bash(git status *)",
-      "Bash(node -e \"const s = require\\('sharp'\\); console.log\\('sharp ok'\\);\")"
+      "Bash(node -e \"const s = require\\('sharp'\\); console.log\\('sharp ok'\\);\")",
+      "Bash(node -e \"const fs = require\\('fs'\\); const pkg = JSON.parse\\(fs.readFileSync\\('node_modules/pdfjs-dist/package.json', 'utf8'\\)\\); console.log\\('version:', pkg.version\\); const exists = fs.existsSync\\('node_modules/pdfjs-dist/build/pdf.worker.min.mjs'\\); console.log\\('worker exists:', exists\\);\")",
+      "Bash(node -e \"const fs = require\\('fs'\\); const pkg = JSON.parse\\(fs.readFileSync\\('node_modules/pdfjs-dist/package.json', 'utf8'\\)\\); console.log\\('exports:', JSON.stringify\\(pkg.exports?.['./build/pdf.worker.min.mjs'] || 'not found'\\)\\);\")",
+      "Bash(node -e \"const fs = require\\('fs'\\); const pkg = JSON.parse\\(fs.readFileSync\\('node_modules/pdfjs-dist/package.json', 'utf8'\\)\\); const keys = Object.keys\\(pkg.exports || {}\\); console.log\\(keys.join\\('\\\\n'\\)\\);\")",
+      "Bash(node -e \"const fs = require\\('fs'\\); const pkg = JSON.parse\\(fs.readFileSync\\('node_modules/pdfjs-dist/package.json', 'utf8'\\)\\); console.log\\(JSON.stringify\\(pkg.exports, null, 2\\)\\);\")",
+      "Bash(node -e \"const fs = require\\('fs'\\); const pkg = JSON.parse\\(fs.readFileSync\\('node_modules/pdfjs-dist/package.json', 'utf8'\\)\\); console.log\\('main:', pkg.main\\); console.log\\('module:', pkg.module\\); console.log\\('type:', pkg.type\\);\")",
+      "Bash(Copy-Item *)",
+      "Bash(node -e \"const p = require\\('./node_modules/pdfjs-dist/package.json'\\); console.log\\(p.version\\);\")"
     ]
   }
 }

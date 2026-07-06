@@ -253,7 +253,11 @@ const isExternalAudio = (path: string | undefined) =>
                      style="display: none;">
                     <div class="relative flex h-[95vh] w-[95vw] flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
                         <div class="flex shrink-0 items-center justify-between border-b border-stone-200 px-4 py-3">
-                            <span id="pdf-status" class="text-sm text-stone-500">Chargement…</span>
+                            <div class="flex items-center gap-2">
+                                <span id="pdf-status" class="text-sm text-stone-500">Chargement…</span>
+                                <button id="pdf-zoom-out" class="flex h-7 w-7 items-center justify-center rounded border border-stone-300 text-lg leading-none text-stone-600 hover:bg-stone-100 disabled:opacity-30" title="Réduire">−</button>
+                                <button id="pdf-zoom-in"  class="flex h-7 w-7 items-center justify-center rounded border border-stone-300 text-lg leading-none text-stone-600 hover:bg-stone-100 disabled:opacity-30" title="Agrandir">+</button>
+                            </div>
                             <div class="flex items-center gap-2">
                                 <a id="pdf-open-tab" href="" target="_blank" rel="noopener"
                                    class="flex items-center gap-1.5 rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-600 transition-colors hover:bg-stone-50">
@@ -279,8 +283,7 @@ const isExternalAudio = (path: string | undefined) =>
 
                 <script>
                     import * as pdfjsLib from 'pdfjs-dist';
-                    import pdfjsWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-                    pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerUrl;
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = import.meta.env.BASE_URL + 'pdf.worker.min.mjs';
 
                     // ── YouTube overlay ────────────────────────────────────────
                     const ytOverlay = document.getElementById('yt-overlay') as HTMLElement;
@@ -435,15 +438,35 @@ const isExternalAudio = (path: string | undefined) =>
                     });
 
                     // ── Visionneuse PDF (pdfjs-dist) ──────────────────────────
-                    const pdfOverlay = document.getElementById('pdf-overlay') as HTMLElement;
+                    const pdfOverlay   = document.getElementById('pdf-overlay')   as HTMLElement;
                     const pdfContainer = document.getElementById('pdf-container') as HTMLElement;
-                    const pdfStatus = document.getElementById('pdf-status') as HTMLElement;
-                    const pdfOpenTab = document.getElementById('pdf-open-tab') as HTMLAnchorElement;
+                    const pdfStatus    = document.getElementById('pdf-status')    as HTMLElement;
+                    const pdfOpenTab   = document.getElementById('pdf-open-tab')  as HTMLAnchorElement;
                     let pdfLoadingTask: any = null;
+                    let pdfZoom = 1.0;
+                    const pdfPages: Array<{el: HTMLCanvasElement; w: number; h: number}> = [];
+
+                    function applyZoom() {
+                        pdfPages.forEach(p => {
+                            p.el.style.width  = `${p.w * pdfZoom}px`;
+                            p.el.style.height = `${p.h * pdfZoom}px`;
+                        });
+                    }
+
+                    document.getElementById('pdf-zoom-in')!.addEventListener('click', () => {
+                        pdfZoom = Math.min(3, pdfZoom * 1.25);
+                        applyZoom();
+                    });
+                    document.getElementById('pdf-zoom-out')!.addEventListener('click', () => {
+                        pdfZoom = Math.max(0.25, pdfZoom / 1.25);
+                        applyZoom();
+                    });
 
                     async function openPdf(url: string) {
                         if (pdfLoadingTask) pdfLoadingTask.destroy();
                         pdfContainer.innerHTML = '';
+                        pdfPages.length = 0;
+                        pdfZoom = 1.0;
                         pdfStatus.textContent = 'Chargement…';
                         pdfOpenTab.href = url;
                         pdfOverlay.style.display = 'flex';
@@ -451,7 +474,7 @@ const isExternalAudio = (path: string | undefined) =>
                         try {
                             pdfLoadingTask = pdfjsLib.getDocument(url);
                             const pdf = await pdfLoadingTask.promise;
-                            const w = pdfContainer.clientWidth - 32;
+                            const w = Math.max(pdfContainer.clientWidth - 32, 200);
                             for (let n = 1; n <= pdf.numPages; n++) {
                                 const page = await pdf.getPage(n);
                                 const base = page.getViewport({ scale: 1 });
@@ -459,12 +482,13 @@ const isExternalAudio = (path: string | undefined) =>
                                 const vp = page.getViewport({ scale });
                                 const dpr = window.devicePixelRatio || 1;
                                 const canvas = document.createElement('canvas');
-                                canvas.width = Math.floor(vp.width * dpr);
+                                canvas.width  = Math.floor(vp.width  * dpr);
                                 canvas.height = Math.floor(vp.height * dpr);
-                                canvas.style.width = `${vp.width}px`;
+                                canvas.style.width  = `${vp.width}px`;
                                 canvas.style.height = `${vp.height}px`;
-                                canvas.className = 'max-w-full shadow-md';
+                                canvas.className = 'max-w-none shadow-md';
                                 pdfContainer.appendChild(canvas);
+                                pdfPages.push({ el: canvas, w: vp.width, h: vp.height });
                                 const ctx = canvas.getContext('2d')!;
                                 ctx.scale(dpr, dpr);
                                 await page.render({ canvasContext: ctx, viewport: vp }).promise;
@@ -472,8 +496,9 @@ const isExternalAudio = (path: string | undefined) =>
                             pdfStatus.textContent = `${pdf.numPages} page${pdf.numPages > 1 ? 's' : ''}`;
                         } catch (err: any) {
                             if (err?.name !== 'RenderingCancelledException') {
+                                console.error('[pdfjs]', err);
                                 pdfStatus.textContent = 'Erreur';
-                                pdfContainer.innerHTML = '<p class="p-4 text-red-500">Impossible de charger le PDF.</p>';
+                                pdfContainer.innerHTML = `<p class="p-4 text-red-500">Impossible de charger le PDF.<br><code class="text-xs">${err?.message ?? err}</code></p>`;
                             }
                         }
                     }
@@ -481,6 +506,7 @@ const isExternalAudio = (path: string | undefined) =>
                     function closePdf() {
                         pdfOverlay.style.display = 'none';
                         pdfContainer.innerHTML = '';
+                        pdfPages.length = 0;
                         if (pdfLoadingTask) { pdfLoadingTask.destroy(); pdfLoadingTask = null; }
                         document.body.style.overflow = '';
                     }
