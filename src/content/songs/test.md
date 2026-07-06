@@ -1,5 +1,5 @@
 ---
-title: test
+title: Sanctus Saint Jean
 occasion: Sanctus
-pdf: uploads/test.pdf
+pdf: uploads/sanctus-saint-jean.pdf
 ---
