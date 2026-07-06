@@ -495,6 +495,18 @@ const base = import.meta.env.DEV
   </div>
 </div>
 
+<!-- Modale : saisie du titre d'un chant -->
+<div id="modal-ask-title" class="fixed inset-0 z-[110] items-center justify-center bg-black/50 p-4" style="display:none;">
+  <div class="w-full max-w-sm rounded-xl bg-white p-5 shadow-xl">
+    <p id="ask-title-label" class="mb-3 text-sm font-medium text-stone-700"></p>
+    <input id="ask-title-input" type="text" class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
+    <div class="mt-4 flex justify-end gap-2">
+      <button id="ask-title-cancel" type="button" class="rounded-lg border border-stone-300 px-4 py-2 text-sm text-stone-600 hover:bg-stone-50 transition-colors">Annuler</button>
+      <button id="ask-title-ok" type="button" class="rounded-lg bg-blue-700 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 transition-colors">OK</button>
+    </div>
+  </div>
+</div>
+
 <!-- Toast de notification -->
 <div id="admin-toast" class="fixed right-4 top-4 z-[120] hidden max-w-xs rounded-xl px-4 py-3 text-sm font-medium shadow-lg transition-all"></div>
 
@@ -1097,6 +1109,32 @@ function updateSlotPdfsArea(sel, slotRow) {
   }
 }
 
+function askTitle(label, defaultVal = '') {
+  return new Promise(resolve => {
+    const modal = document.getElementById('modal-ask-title');
+    document.getElementById('ask-title-label').textContent = label;
+    const input = document.getElementById('ask-title-input');
+    input.value = defaultVal;
+    modal.style.display = 'flex';
+    setTimeout(() => { input.focus(); input.select(); }, 50);
+    function close(val) {
+      modal.style.display = 'none';
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      input.removeEventListener('keydown', onKey);
+      resolve(val || null);
+    }
+    const okBtn = document.getElementById('ask-title-ok');
+    const cancelBtn = document.getElementById('ask-title-cancel');
+    function onOk() { close(input.value.trim()); }
+    function onCancel() { close(null); }
+    function onKey(e) { if (e.key === 'Enter') onOk(); else if (e.key === 'Escape') onCancel(); }
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    input.addEventListener('keydown', onKey);
+  });
+}
+
 function buildProgramSlots(container, currentProgram, type) {
   const VNAMES = {s:'Soprano', a:'Alto', t:'Ténor', b:'Basse'};
   const VOICE_INPUTS_HTML = ['s','a','t','b'].map(v => `
@@ -1122,6 +1160,7 @@ function buildProgramSlots(container, currentProgram, type) {
           Importer
           <input type="file" accept=".pdf" class="slot-file hidden" data-slot="${slot.key}" data-occasion="${slot.occasion}" data-label="${slot.label}" />
         </label>
+        <button type="button" class="slot-btn-new flex-shrink-0 rounded border border-stone-300 px-2 py-1 text-xs text-stone-500 hover:border-green-600 hover:text-green-700 transition-colors" data-slot="${slot.key}" data-occasion="${slot.occasion}" data-label="${slot.label}" title="Créer un nouveau chant">+</button>
         <span class="slot-status w-4 flex-shrink-0 text-xs text-stone-400" data-slot="${slot.key}"></span>
       </div>
       <div class="slot-pdfs-area ml-0 hidden sm:ml-36">
@@ -1152,7 +1191,7 @@ function buildProgramSlots(container, currentProgram, type) {
   container.querySelectorAll('.slot-file').forEach(input => {
     input.addEventListener('change', async () => {
       const file = input.files[0]; if (!file) return;
-      const title = prompt(`Titre du chant (${input.dataset.label}) :`, file.name.replace(/\.pdf$/i, ''));
+      const title = await askTitle(`Titre du chant (${input.dataset.label})`, file.name.replace(/\.pdf$/i, ''));
       if (!title) { input.value = ''; return; }
       const statusEl = container.querySelector(`.slot-status[data-slot="${input.dataset.slot}"]`);
       const normalTitle = t => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
@@ -1199,6 +1238,35 @@ function buildProgramSlots(container, currentProgram, type) {
         if (slotRow) updateSlotPdfsArea(sel, slotRow);
         loadSongs(); triggerRebuild();
       } catch { statusEl.textContent = '✗'; }
+    });
+  });
+
+  container.querySelectorAll('.slot-btn-new').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const title = await askTitle(`Titre du nouveau chant (${btn.dataset.label})`);
+      if (!title) return;
+      const t = title;
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.accept = '.pdf';
+      fileInput.addEventListener('change', async () => {
+        const file = fileInput.files[0]; if (!file) return;
+        const statusEl = container.querySelector(`.slot-status[data-slot="${btn.dataset.slot}"]`);
+        statusEl.textContent = '…';
+        try {
+          const pdfPath = `uploads/${slugify(t)}.pdf`;
+          await ghPut(`public/${pdfPath}`, await fileToBase64(file), `partition: ${t}`);
+          const songMd = ['---', `title: ${yamlStr(t)}`, `occasion: ${yamlStr(btn.dataset.occasion)}`, `pdf: ${pdfPath}`, '---', ''].join('\n');
+          await ghPut(`src/content/songs/${slugify(t)}.md`, b64encode(songMd), `ajout chant: ${t}`);
+          const sel = container.querySelector(`.slot-select[data-slot="${btn.dataset.slot}"]`);
+          sel.appendChild(new Option(t, pdfPath, true, true));
+          statusEl.textContent = '✓';
+          const slotRow = sel.closest('.slot-row');
+          if (slotRow) updateSlotPdfsArea(sel, slotRow);
+          loadSongs(); triggerRebuild();
+        } catch { statusEl.textContent = '✗'; }
+      });
+      fileInput.click();
     });
   });
 
@@ -1680,39 +1748,7 @@ function renderPickerList(query) {
     .sort((a, b) => a.title.localeCompare(b.title, 'fr'));
   const list = document.getElementById('picker-list');
   if (!songs.length) {
-    const titleVal = query.trim();
-    list.innerHTML = `
-      <div class="flex flex-col items-center gap-3 px-4 py-5 text-center">
-        <p class="text-sm italic text-stone-400">Aucun chant trouvé.</p>
-        ${titleVal ? `<label class="cursor-pointer inline-flex items-center gap-2 rounded-lg border border-dashed border-blue-300 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-          Créer « ${titleVal.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')} »
-          <input type="file" accept=".pdf" class="hidden picker-create-file" />
-        </label>` : ''}
-      </div>`;
-    const fileInput = list.querySelector('.picker-create-file');
-    if (fileInput) {
-      fileInput.addEventListener('change', async () => {
-        const file = fileInput.files[0];
-        if (!file) return;
-        const { slot, occasion, container } = pickerCtx;
-        const statusEl = container.querySelector(`.slot-status[data-slot="${slot}"]`);
-        closeSongPicker();
-        statusEl.textContent = '…';
-        try {
-          const pdfPath = `uploads/${slugify(titleVal)}.pdf`;
-          await ghPut(`public/${pdfPath}`, await fileToBase64(file), `partition: ${titleVal}`);
-          const songMd = ['---', `title: ${yamlStr(titleVal)}`, `occasion: ${yamlStr(occasion || 'En plus')}`, `pdf: ${pdfPath}`, '---', ''].join('\n');
-          await ghPut(`src/content/songs/${slugify(titleVal)}.md`, b64encode(songMd), `ajout chant: ${titleVal}`);
-          const sel = container.querySelector(`.slot-select[data-slot="${slot}"]`);
-          sel.appendChild(new Option(titleVal, pdfPath, true, true));
-          statusEl.textContent = '✓';
-          const slotRow = sel?.closest('.slot-row');
-          if (slotRow) updateSlotPdfsArea(sel, slotRow);
-          loadSongs(); triggerRebuild();
-        } catch (err) { statusEl.textContent = '✗'; console.error(err); }
-      });
-    }
+    list.innerHTML = '<p class="px-4 py-5 text-center text-stone-400 italic">Aucun chant trouvé.</p>';
     return;
   }
   const occ = pickerCtx?.occasion || '';
