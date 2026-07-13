@@ -8,18 +8,22 @@ const events    = await getCollection('events');
 const allSongs  = await getCollection('songs');
 const songsByPdf: Record<string, string> = {};
 const songMultiPdfsMap: Record<string, Array<{label: string, url: string}>> = {};
-const songAudiosMap: Record<string, Record<string, string>> = {};
+const songAudiosMap: Record<string, Record<string, Array<{label: string, url: string}>>> = {};
 allSongs.forEach(s => {
   if (s.data.pdf) {
     songsByPdf[s.data.pdf] = s.data.title;
     if (s.data.pdfs && s.data.pdfs.length > 1) {
       songMultiPdfsMap[s.data.pdf] = s.data.pdfs;
     }
-    const entry: Record<string, string> = {};
-    if (s.data.audio_soprano) entry.s = s.data.audio_soprano;
-    if (s.data.audio_alto) entry.a = s.data.audio_alto;
-    if (s.data.audio_tenor) entry.t = s.data.audio_tenor;
-    if (s.data.audio_basse) entry.b = s.data.audio_basse;
+    const entry: Record<string, Array<{label: string, url: string}>> = {};
+    const soprano = [
+      ...(s.data.audio_soprano ?? []).map(v => ({...v, label: v.label || 'Soprano'})),
+      ...(s.data.audio_tutti ?? []).map(v => ({...v, label: v.label || 'Tutti'})),
+    ];
+    if (soprano.length) entry.s = soprano;
+    if (s.data.audio_alto?.length) entry.a = s.data.audio_alto.map(v => ({...v, label: v.label || 'Alto'}));
+    if (s.data.audio_tenor?.length) entry.t = s.data.audio_tenor.map(v => ({...v, label: v.label || 'Ténor'}));
+    if (s.data.audio_basse?.length) entry.b = s.data.audio_basse.map(v => ({...v, label: v.label || 'Basse'}));
     if (Object.keys(entry).length > 0) songAudiosMap[s.data.pdf] = entry;
   }
 });
@@ -136,6 +140,9 @@ const pastEvents = allEvents.filter(e => e.data.date < today).reverse();
 	<!-- Sélecteur de partition (multi-PDF) -->
 	<div id="pdf-picker" class="fixed z-[70] rounded-lg border border-stone-200 bg-white py-1 shadow-lg" style="display:none; min-width:10rem;"></div>
 
+	<!-- Sélecteur audio (multi-audio) -->
+	<div id="audio-picker" class="fixed z-[80] rounded-lg border border-stone-200 bg-white py-1 shadow-lg" style="display:none; min-width:10rem;"></div>
+
 	<!-- Modale détail + inscription -->
 	<div id="modal-detail" class="fixed inset-0 z-50 items-center justify-center bg-black/50 p-4" style="display:none;">
 		<div class="relative w-full max-w-4xl rounded-xl bg-white shadow-xl" style="max-height:90vh;">
@@ -217,6 +224,7 @@ const pastEvents = allEvents.filter(e => e.data.date < today).reverse();
 		<div class="flex w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-black shadow-2xl">
 			<div class="flex items-center gap-2 px-3 py-2">
 				<span id="yt-track-info" class="flex-1 truncate text-xs text-white/60"></span>
+				<button id="btn-prev-yt" class="hidden rounded bg-white/10 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-white/20">◀ Précédent</button>
 				<button id="btn-next-yt" class="hidden rounded bg-white/10 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-white/20">Suivant ▶</button>
 				<button id="btn-close-yt" class="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-2 text-sm font-semibold text-white backdrop-blur transition-colors hover:bg-white/20">
 					<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -248,6 +256,7 @@ const pastEvents = allEvents.filter(e => e.data.date < today).reverse();
 	const ytOverlay = document.getElementById('yt-overlay') as HTMLElement;
 	const ytTrackInfo = document.getElementById('yt-track-info') as HTMLElement;
 	const btnNextYt = document.getElementById('btn-next-yt') as HTMLButtonElement;
+	const btnPrevYt = document.getElementById('btn-prev-yt') as HTMLButtonElement;
 
 	let ytPlayer: any = null;
 	let videoQueue: Array<{id: string; title: string}> = [];
@@ -264,6 +273,7 @@ const pastEvents = allEvents.filter(e => e.data.date < today).reverse();
 		ytTrackInfo.textContent = isPlaylist
 			? `${queueIndex + 1} / ${videoQueue.length}${item?.title ? ' — ' + item.title : ''}`
 			: (item?.title || '');
+		btnPrevYt.classList.toggle('hidden', !isPlaylist || queueIndex <= 0);
 		btnNextYt.classList.toggle('hidden', !isPlaylist || queueIndex >= videoQueue.length - 1);
 	}
 
@@ -271,6 +281,10 @@ const pastEvents = allEvents.filter(e => e.data.date < today).reverse();
 		queueIndex = index;
 		updateTrackInfo();
 		ytPlayer?.loadVideoById(videoQueue[index]?.id);
+	}
+
+	function playPrevInQueue() {
+		if (queueIndex > 0) playQueueItem(queueIndex - 1);
 	}
 
 	function playNextInQueue() {
@@ -311,6 +325,7 @@ const pastEvents = allEvents.filter(e => e.data.date < today).reverse();
 	}
 
 	document.getElementById('btn-close-yt')!.addEventListener('click', closeYouTubeOverlay);
+	btnPrevYt.addEventListener('click', playPrevInQueue);
 	btnNextYt.addEventListener('click', playNextInQueue);
 	ytOverlay.addEventListener('click', (e) => { if (e.target === ytOverlay) closeYouTubeOverlay(); });
 
@@ -342,18 +357,22 @@ const pastEvents = allEvents.filter(e => e.data.date < today).reverse();
 	const songsMap: Record<string, string> = JSON.parse(songsDataEl?.dataset.map || '{}');
 	const multiPdfsMap: Record<string, Array<{label: string, url: string}>> = JSON.parse(songsDataEl?.dataset.multiPdfs || '{}');
 	const base = songsDataEl?.dataset.base || '/';
-	const audiosMap: Record<string, Record<string, string>> = JSON.parse(songsDataEl?.dataset.audios || '{}');
+	const audiosMap: Record<string, Record<string, Array<{label: string, url: string}>>> = JSON.parse(songsDataEl?.dataset.audios || '{}');
 
 	function makeVoiceButtons(pdfPath: string, songTitle = ''): string {
 		const songAudios = audiosMap[pdfPath] || {};
 		const VNAMES: Record<string, string> = {s:'Soprano', a:'Alto', t:'Ténor', b:'Basse'};
 		return ['s','a','t','b'].map(voice => {
-			const ap = songAudios[voice];
-			if (!ap) return '';
-			const ext = ap.startsWith('http://') || ap.startsWith('https://');
-			const url = ext ? ap : `${base}${ap.replace(/^\/+/, '')}`;
-			const cls = ext ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-blue-50 text-blue-700 hover:bg-blue-100';
-			return `<button class="agenda-audio-btn flex-shrink-0 inline-flex h-5 w-5 items-center justify-center rounded-full ${cls} text-xs font-bold" data-audio-url="${url}" data-is-external="${ext}" data-voice="${voice}" data-song-title="${songTitle.replace(/"/g, '&quot;')}" title="${VNAMES[voice]}">${voice.toUpperCase()}</button>`;
+			const variants: Array<{label: string, url: string}> = (songAudios[voice] || []).map(v => ({
+				...v,
+				url: v.url.startsWith('http://') || v.url.startsWith('https://') ? v.url : `${base}${v.url.replace(/^\/+/, '')}`
+			}));
+			if (!variants.length) return '';
+			const v0 = variants[0];
+			const isSingleExt = variants.length === 1 && (v0.url.startsWith('http://') || v0.url.startsWith('https://'));
+			const cls = isSingleExt ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-blue-50 text-blue-700 hover:bg-blue-100';
+			const variantsAttr = JSON.stringify(variants).replace(/"/g, '&quot;');
+			return `<button class="agenda-audio-btn flex-shrink-0 inline-flex h-5 w-5 items-center justify-center rounded-full ${cls} text-xs font-bold" data-audio-url="${v0.url}" data-audio-variants="${variantsAttr}" data-is-external="${isSingleExt}" data-voice="${voice}" data-song-title="${songTitle.replace(/"/g, '&quot;')}" title="${VNAMES[voice]}">${voice.toUpperCase()}</button>`;
 		}).join('');
 	}
 
@@ -719,11 +738,63 @@ const pastEvents = allEvents.filter(e => e.data.date < today).reverse();
 		}
 	});
 
+	// ── Sélecteur audio (multi-audio) ────────────────────────
+	const audioPicker = document.getElementById('audio-picker') as HTMLElement;
+	let currentAudioPickerBtn: HTMLButtonElement | null = null;
+
+	function showAgendaAudioPicker(btn: HTMLButtonElement, variants: Array<{label: string, url: string}>) {
+		currentAudioPickerBtn = btn;
+		const songTitle = btn.dataset.songTitle || '';
+		audioPicker.innerHTML = variants.map(v =>
+			`<button class="agenda-audio-picker-item block w-full truncate rounded px-3 py-1.5 text-left text-sm text-stone-700 hover:bg-blue-50 hover:text-blue-800" data-url="${v.url}" data-is-external="${v.url.startsWith('http://') || v.url.startsWith('https://')}" data-song-title="${songTitle.replace(/"/g, '&quot;')}">${v.label}</button>`
+		).join('');
+		const rect = btn.getBoundingClientRect();
+		audioPicker.style.top = `${rect.bottom + 4}px`;
+		audioPicker.style.left = `${rect.left}px`;
+		audioPicker.style.display = 'block';
+	}
+
+	audioPicker.addEventListener('click', (e) => {
+		const item = (e.target as HTMLElement).closest<HTMLButtonElement>('.agenda-audio-picker-item');
+		if (item) {
+			audioPicker.style.display = 'none';
+			const url = item.dataset.url!;
+			const isExt = item.dataset.isExternal === 'true';
+			const songTitle = item.dataset.songTitle || '';
+			if (isExt) {
+				const id = getYouTubeId(url);
+				if (id) { videoQueue = [{id, title: songTitle}]; queueIndex = 0; showOverlayAndPlay(); }
+				else window.open(url, '_blank', 'noopener');
+				return;
+			}
+			const btn = currentAudioPickerBtn;
+			if (btn) {
+				if (currentModalAudioBtn) currentModalAudioBtn.classList.remove('ring-2', 'ring-blue-700', 'ring-offset-1');
+				modalAudio.src = url;
+				modalAudio.play();
+				btn.classList.add('ring-2', 'ring-blue-700', 'ring-offset-1');
+				currentModalAudioBtn = btn;
+			}
+		}
+	});
+
+	document.addEventListener('click', (e) => {
+		if (!audioPicker.contains(e.target as Node)) {
+			audioPicker.style.display = 'none';
+		}
+	});
+
 	// ── Boutons voix dans la modale ───────────────────────────
 	document.getElementById('modal-detail')!.addEventListener('click', (e) => {
 		const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('.agenda-audio-btn');
 		if (btn) {
 			e.stopPropagation();
+			let variants: Array<{label: string, url: string}> = [];
+			try { variants = JSON.parse(btn.dataset.audioVariants || '[]'); } catch {}
+			if (variants.length > 1) {
+				showAgendaAudioPicker(btn, variants);
+				return;
+			}
 			const url = btn.dataset.audioUrl!;
 			const isExternal = btn.dataset.isExternal === 'true';
 			if (isExternal) {
