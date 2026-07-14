@@ -370,9 +370,12 @@ const pastEvents = allEvents.filter(e => e.data.date < today).reverse();
 			if (!variants.length) return '';
 			const v0 = variants[0];
 			const isSingleExt = variants.length === 1 && (v0.url.startsWith('http://') || v0.url.startsWith('https://'));
+			const isMulti = variants.length > 1;
 			const cls = isSingleExt ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-blue-50 text-blue-700 hover:bg-blue-100';
+			const ringCls = isMulti ? ' ring-2 ring-blue-300 ring-offset-1' : '';
+			const titleAttr = isMulti ? `${VNAMES[voice]} — Plusieurs versions` : VNAMES[voice];
 			const variantsAttr = JSON.stringify(variants).replace(/"/g, '&quot;');
-			return `<button class="agenda-audio-btn flex-shrink-0 inline-flex h-5 w-5 items-center justify-center rounded-full ${cls} text-xs font-bold" data-audio-url="${v0.url}" data-audio-variants="${variantsAttr}" data-is-external="${isSingleExt}" data-voice="${voice}" data-song-title="${songTitle.replace(/"/g, '&quot;')}" title="${VNAMES[voice]}">${voice.toUpperCase()}</button>`;
+			return `<button class="agenda-audio-btn flex-shrink-0 inline-flex h-5 w-5 items-center justify-center rounded-full ${cls}${ringCls} text-xs font-bold" data-audio-url="${v0.url}" data-audio-variants="${variantsAttr}" data-is-external="${isSingleExt}" data-voice="${voice}" data-song-title="${songTitle.replace(/"/g, '&quot;')}" title="${titleAttr}">${voice.toUpperCase()}</button>`;
 		}).join('');
 	}
 
@@ -792,7 +795,13 @@ const pastEvents = allEvents.filter(e => e.data.date < today).reverse();
 			let variants: Array<{label: string, url: string}> = [];
 			try { variants = JSON.parse(btn.dataset.audioVariants || '[]'); } catch {}
 			if (variants.length > 1) {
-				showAgendaAudioPicker(btn, variants);
+				if (currentModalAudioBtn === btn && !modalAudio.paused) {
+					modalAudio.pause();
+					btn.classList.remove('ring-2', 'ring-blue-700', 'ring-offset-1');
+					currentModalAudioBtn = null;
+				} else {
+					showAgendaAudioPicker(btn, variants);
+				}
 				return;
 			}
 			const url = btn.dataset.audioUrl!;

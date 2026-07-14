@@ -69,6 +69,7 @@ const buildVoiceData = (variants: Array<{label: string, url: string}> | undefine
                 const combinedB = buildVoiceData(song.data.audio_basse, 'Basse');
                 const voiceBtn = (combined: typeof combinedS, voice: string, title: string) => {
                     if (combined.length === 0) return <span class="text-stone-200">–</span>;
+                    const multi = combined.length > 1;
                     const singleExt = combined.length === 1 && isExternalAudio(combined[0].url);
                     return singleExt ? (
                         <button class="audio-btn inline-flex h-7 w-7 items-center justify-center rounded-full bg-red-50 text-red-600 transition-colors hover:bg-red-100"
@@ -78,8 +79,8 @@ const buildVoiceData = (variants: Array<{label: string, url: string}> | undefine
                             </svg>
                         </button>
                     ) : (
-                        <button class="audio-btn inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-50 text-blue-700 transition-colors hover:bg-blue-100"
-                                data-voice={voice} title={title}>
+                        <button class={`audio-btn inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-50 text-blue-700 transition-colors hover:bg-blue-100${multi ? ' ring-2 ring-blue-300 ring-offset-1' : ''}`}
+                                data-voice={voice} title={multi ? `${title} — Plusieurs versions` : title}>
                             <svg class="play-icon h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
                             </svg>
@@ -274,7 +275,14 @@ const buildVoiceData = (variants: Array<{label: string, url: string}> | undefine
                             try { variants = JSON.parse(variantsJson || '[]'); } catch {}
                             if (!variants.length) return;
                             if (variants.length > 1) {
-                                showAudioPicker(audioBtn, variants);
+                                e.stopPropagation();
+                                if (currentBtn === audioBtn && !audioPlayer.paused) {
+                                    audioPlayer.pause();
+                                    setPlaying(audioBtn, false);
+                                    currentBtn = null;
+                                } else {
+                                    showAudioPicker(audioBtn, variants);
+                                }
                                 return;
                             }
                             const url = variants[0].url;

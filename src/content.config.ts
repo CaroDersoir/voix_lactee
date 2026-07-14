@@ -9,11 +9,11 @@ const songs = defineCollection({
 		occasion: z.union([z.string(), z.array(z.string())]).transform(v => Array.isArray(v) ? v : [v]),
 		pdf: z.string().optional(),
 		pdfs: z.array(z.object({ label: z.string(), url: z.string() })).optional(),
-		audio_soprano: z.union([z.string().transform(url => [{label: '', url}]), z.array(z.object({label: z.string(), url: z.string()}))]).optional(),
-		audio_alto: z.union([z.string().transform(url => [{label: '', url}]), z.array(z.object({label: z.string(), url: z.string()}))]).optional(),
-		audio_tenor: z.union([z.string().transform(url => [{label: '', url}]), z.array(z.object({label: z.string(), url: z.string()}))]).optional(),
-		audio_basse: z.union([z.string().transform(url => [{label: '', url}]), z.array(z.object({label: z.string(), url: z.string()}))]).optional(),
-		audio_tutti: z.union([z.string().transform(url => [{label: '', url}]), z.array(z.object({label: z.string(), url: z.string()}))]).optional(),
+		audio_soprano: z.union([z.string().transform(url => [{label: '', url}]), z.array(z.object({label: z.string().nullable().transform(v => v ?? ''), url: z.string()}))]).optional(),
+		audio_alto: z.union([z.string().transform(url => [{label: '', url}]), z.array(z.object({label: z.string().nullable().transform(v => v ?? ''), url: z.string()}))]).optional(),
+		audio_tenor: z.union([z.string().transform(url => [{label: '', url}]), z.array(z.object({label: z.string().nullable().transform(v => v ?? ''), url: z.string()}))]).optional(),
+		audio_basse: z.union([z.string().transform(url => [{label: '', url}]), z.array(z.object({label: z.string().nullable().transform(v => v ?? ''), url: z.string()}))]).optional(),
+		audio_tutti: z.union([z.string().transform(url => [{label: '', url}]), z.array(z.object({label: z.string().nullable().transform(v => v ?? ''), url: z.string()}))]).optional(),
 	})
 });
 

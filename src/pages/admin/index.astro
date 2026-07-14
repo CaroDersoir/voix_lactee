@@ -637,7 +637,7 @@ function parseAudioField(md, fieldName) {
   if (blockMatch) {
     const block = blockMatch[1];
     const items = [];
-    const re = /[ \t]+-[ \t]+label:[ \t]*(.+)\n[ \t]+url:[ \t]*(.+)/g;
+    const re = /[ \t]+-[ \t]+label:[ \t]*([^\n]*)\n[ \t]+url:[ \t]*(.+)/g;
     let m;
     while ((m = re.exec(block)) !== null) {
       items.push({ label: m[1].trim().replace(/^"|"$/g, ''), url: m[2].trim() });
