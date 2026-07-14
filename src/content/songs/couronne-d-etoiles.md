@@ -2,11 +2,6 @@
 title: "Couronne d'étoiles"
 occasion: Chant à la Vierge
 pdf: https://www.youtube.com/watch?v=BsVevoaynKU&list=RDBsVevoaynKU&start_radio=1&pp=ygUZY291cm9ubmUgZCdldG9pbGUgc29wcmFub6AHAQ%3D%3D
-pdfs:
-  - label: Partition
-    url: https://www.youtube.com/watch?v=BsVevoaynKU&list=RDBsVevoaynKU&start_radio=1&pp=ygUZY291cm9ubmUgZCdldG9pbGUgc29wcmFub6AHAQ%3D%3D
-  - label: tutti
-    url: https://www.youtube.com/watch?v=OvXIv8tKbgE&pp=ygURY291cm9ubmVlIGRldG9pbGU%3D
 audio_soprano:
   - label: tutti
     url: https://www.youtube.com/watch?v=OvXIv8tKbgE&pp=ygURY291cm9ubmVlIGRldG9pbGU%3D
