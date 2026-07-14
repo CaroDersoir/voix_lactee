@@ -665,16 +665,28 @@ function audioVariantsToYaml(fieldName, variants) {
 
 function addAudioEntry(container, opts = {}) {
   const { label = '', url = '' } = opts;
+  const isLocal = url && !url.startsWith('http://') && !url.startsWith('https://');
   const entry = document.createElement('div');
   entry.className = 'audio-entry flex flex-wrap items-center gap-1.5';
-  entry.innerHTML = `
-    <input type="text" value="${label.replace(/"/g, '&quot;')}" placeholder="Libellé optionnel (ex. : Version A)"
-      class="audio-label w-36 flex-shrink-0 rounded border border-stone-200 bg-stone-50 px-2 py-1 text-xs text-stone-700 placeholder:text-stone-300 focus:border-blue-500 focus:bg-white focus:outline-none" />
-    <input type="url" value="${url.replace(/"/g, '&quot;')}" placeholder="URL YouTube ou lien audio"
-      class="audio-url min-w-0 flex-1 rounded border border-stone-300 px-2 py-1 text-xs text-stone-700 focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
-    <input type="file" accept=".mp3,audio/*"
-      class="audio-file w-full rounded border border-stone-200 px-1.5 py-0.5 text-xs text-stone-500 file:mr-1.5 file:cursor-pointer file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-0.5 file:text-xs file:font-medium file:text-blue-800 hover:file:bg-blue-100" />
-    <button type="button" class="btn-remove-audio flex-shrink-0 text-lg leading-none text-stone-300 hover:text-red-500 transition-colors">×</button>`;
+  entry.dataset.existingUrl = url;
+  const labelInput = `<input type="text" value="${label.replace(/"/g, '&quot;')}" placeholder="Libellé optionnel (ex. : Version A)"
+    class="audio-label w-36 flex-shrink-0 rounded border border-stone-200 bg-stone-50 px-2 py-1 text-xs text-stone-700 placeholder:text-stone-300 focus:border-blue-500 focus:bg-white focus:outline-none" />`;
+  if (isLocal) {
+    const filename = url.split('/').pop();
+    entry.innerHTML = `${labelInput}
+      <span class="flex-1 min-w-0 truncate text-xs text-stone-400 italic" title="${url}">${filename}</span>
+      <label class="flex-shrink-0 cursor-pointer rounded border border-stone-300 px-2 py-1 text-xs text-stone-500 hover:border-blue-600 hover:text-blue-700 transition-colors whitespace-nowrap">
+        Remplacer <input type="file" accept=".mp3,audio/*" class="audio-file hidden" />
+      </label>
+      <button type="button" class="btn-remove-audio flex-shrink-0 text-lg leading-none text-stone-300 hover:text-red-500 transition-colors">×</button>`;
+  } else {
+    entry.innerHTML = `${labelInput}
+      <input type="url" value="${url.replace(/"/g, '&quot;')}" placeholder="URL YouTube ou lien audio"
+        class="audio-url min-w-0 flex-1 rounded border border-stone-300 px-2 py-1 text-xs text-stone-700 focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700" />
+      <input type="file" accept=".mp3,audio/*"
+        class="audio-file w-full rounded border border-stone-200 px-1.5 py-0.5 text-xs text-stone-500 file:mr-1.5 file:cursor-pointer file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-0.5 file:text-xs file:font-medium file:text-blue-800 hover:file:bg-blue-100" />
+      <button type="button" class="btn-remove-audio flex-shrink-0 text-lg leading-none text-stone-300 hover:text-red-500 transition-colors">×</button>`;
+  }
   entry.querySelector('.btn-remove-audio').addEventListener('click', () => entry.remove());
   container.appendChild(entry);
 }
@@ -718,8 +730,10 @@ function collectAudioData(containerId, slug) {
     let vIdx = 0;
     for (const entry of section.querySelectorAll('.audio-entry')) {
       const lbl = entry.querySelector('.audio-label').value.trim();
-      const url = entry.querySelector('.audio-url').value.trim();
+      const existingUrl = entry.dataset.existingUrl || '';
       const file = entry.querySelector('.audio-file')?.files?.[0];
+      const urlInput = entry.querySelector('.audio-url');
+      const urlVal = urlInput ? urlInput.value.trim() : '';
       if (file) {
         const ext = file.name.split('.').pop() || 'mp3';
         const idxSuffix = vIdx > 0 ? `-v${vIdx + 1}` : '';
@@ -727,8 +741,12 @@ function collectAudioData(containerId, slug) {
         audioUploads.push({ file, path: uploadPath });
         variants.push({ label: lbl, url: uploadPath });
         vIdx++;
-      } else if (url) {
-        variants.push({ label: lbl, url });
+      } else if (existingUrl && !urlInput) {
+        // fichier local existant (entrée avec bouton Remplacer)
+        variants.push({ label: lbl, url: existingUrl });
+        vIdx++;
+      } else if (urlVal) {
+        variants.push({ label: lbl, url: urlVal });
         vIdx++;
       }
     }
