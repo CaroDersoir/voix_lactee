@@ -13,8 +13,8 @@ pdfs:
     url: uploads/psaume-de-la-creation-tenor.pdf
   - label: basse
     url: uploads/psaume-de-la-creation-basse.pdf
-  - label: 4 voix
-    url: uploads/psaume-de-la-creation-4-voix.pdf
+  - label: tutti
+    url: uploads/psaume-de-la-creation-tutti.pdf
 audio_soprano: uploads/psaume-de-la-creation-soprano.mp3
 audio_alto: uploads/psaume-de-la-creation-alto.mp3
 audio_tenor: uploads/psaume-de-la-creation-tenor.mp3
