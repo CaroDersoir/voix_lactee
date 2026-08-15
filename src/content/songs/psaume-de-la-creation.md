@@ -7,8 +7,6 @@ pdfs:
     url: uploads/psaume-de-la-creation.pdf
   - label: alto
     url: uploads/psaume-de-la-creation-alto.pdf
-  - label: soprano
-    url: uploads/psaume-de-la-creation-soprano.pdf
   - label: tenor
     url: uploads/psaume-de-la-creation-tenor.pdf
   - label: basse
@@ -16,3 +14,4 @@ pdfs:
   - label: tutti
     url: uploads/psaume-de-la-creation-tutti.pdf
 ---
+
