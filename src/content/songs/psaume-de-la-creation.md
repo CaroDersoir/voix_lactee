@@ -15,4 +15,5 @@ pdfs:
     url: uploads/psaume-de-la-creation-tutti.pdf
 audio_soprano: uploads/psaume-de-la-creation-soprano.mp3
 audio_alto: uploads/psaume-de-la-creation-alto.mp3
+audio_tutti: uploads/psaume-de-la-creation-tutti.mp3
 ---
