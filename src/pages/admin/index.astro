@@ -260,7 +260,7 @@ const base = import.meta.env.DEV
 </div>
 
 <!-- ── Modale : modifier un chant ── -->
-<div id="modal-edit-song" class="fixed inset-0 z-50 items-center justify-center bg-black/50 p-4" style="display:none;">
+<div id="modal-edit-song" class="fixed inset-0 z-[60] items-center justify-center bg-black/50 p-4" style="display:none;">
   <div class="flex w-full max-w-lg flex-col rounded-xl bg-white shadow-xl" style="max-height:90vh;">
     <div class="flex flex-shrink-0 items-center justify-between border-b border-stone-200 px-6 py-4">
       <h2 class="text-base font-semibold text-blue-950">Modifier le chant</h2>
@@ -675,9 +675,6 @@ function addAudioEntry(container, opts = {}) {
     const filename = url.split('/').pop();
     entry.innerHTML = `${labelInput}
       <span class="flex-1 min-w-0 truncate text-xs text-stone-400 italic" title="${url}">${filename}</span>
-      <label class="flex-shrink-0 cursor-pointer rounded border border-stone-300 px-2 py-1 text-xs text-stone-500 hover:border-blue-600 hover:text-blue-700 transition-colors whitespace-nowrap">
-        Remplacer <input type="file" accept=".mp3,audio/*" class="audio-file hidden" />
-      </label>
       <button type="button" class="btn-remove-audio flex-shrink-0 text-lg leading-none text-stone-300 hover:text-red-500 transition-colors">×</button>`;
   } else {
     entry.innerHTML = `${labelInput}
@@ -826,6 +823,11 @@ async function ghPut(path, content, msg, sha)   {
 }
 async function ghDelete(path, sha, msg)         { return fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`, { method: 'DELETE', headers: GH, body: JSON.stringify({ message: msg, sha, branch: BRANCH }) }).then(r => r.ok); }
 async function fileToBase64(file)               { return new Promise(res => { const r = new FileReader(); r.onload = e => res(e.target.result.split(',')[1]); r.readAsDataURL(file); }); }
+async function ghPutMedia(path, content, msg) {
+  let sha;
+  try { const e = await ghGet(`contents/${path}`); if (e?.sha) sha = e.sha; } catch(_) {}
+  return ghPut(path, content, msg, sha);
+}
 
 // Auth
 document.getElementById('form-login').addEventListener('submit', e => {
@@ -1001,14 +1003,14 @@ document.getElementById('form-add-song').addEventListener('submit', async e => {
       if (file) {
         const suffix = pdfEntries.length > 1 && labelVal ? `-${slugify(labelVal)}` : '';
         const uploadPath = `uploads/${slug}${suffix}.pdf`;
-        await ghPut(`public/${uploadPath}`, await fileToBase64(file), `ajout partition: ${title}${labelVal ? ' (' + labelVal + ')' : ''}`);
+        await ghPutMedia(`public/${uploadPath}`, await fileToBase64(file), `ajout partition: ${title}${labelVal ? ' (' + labelVal + ')' : ''}`);
         uploadedPdfs.push({ label: labelVal, url: uploadPath });
       }
     }
     let pdfPath = uploadedPdfs.length > 0 ? uploadedPdfs[0].url : '';
     const { audioData, audioUploads } = collectAudioData('song-audio-voices', slug);
     for (const { file, path } of audioUploads) {
-      await ghPut(`public/${path}`, await fileToBase64(file), `audio: ${title}`);
+      await ghPutMedia(`public/${path}`, await fileToBase64(file), `audio: ${title}`);
     }
     const pdfsYaml = uploadedPdfs.length > 1
       ? `pdfs:\n${uploadedPdfs.map(p => `  - label: ${yamlStr(p.label || 'Partition')}\n    url: ${p.url}`).join('\n')}`
@@ -1092,7 +1094,7 @@ document.getElementById('form-edit-song').addEventListener('submit', async e => 
       if (file) {
         const suffix = editPdfEntries.length > 1 && labelVal ? `-${slugify(labelVal)}` : '';
         const newPath = `uploads/${slugify(title)}${suffix}.pdf`;
-        await ghPut(`public/${newPath}`, await fileToBase64(file), `partition: ${title}${labelVal ? ' (' + labelVal + ')' : ''}`);
+        await ghPutMedia(`public/${newPath}`, await fileToBase64(file), `partition: ${title}${labelVal ? ' (' + labelVal + ')' : ''}`);
         editedPdfs.push({ label: labelVal, url: newPath });
       } else if (existingUrl) {
         editedPdfs.push({ label: labelVal, url: existingUrl });
@@ -1101,7 +1103,7 @@ document.getElementById('form-edit-song').addEventListener('submit', async e => 
     let pdfPath = editedPdfs.length > 0 ? editedPdfs[0].url : '';
     const { audioData: editAudioData, audioUploads: editAudioUploads } = collectAudioData('edit-audio-voices', slugify(title));
     for (const { file, path } of editAudioUploads) {
-      await ghPut(`public/${path}`, await fileToBase64(file), `audio: ${title}`);
+      await ghPutMedia(`public/${path}`, await fileToBase64(file), `audio: ${title}`);
     }
     const editPdfsYaml = editedPdfs.length > 1
       ? `pdfs:\n${editedPdfs.map(p => `  - label: ${yamlStr(p.label || 'Partition')}\n    url: ${p.url}`).join('\n')}`
@@ -1114,7 +1116,11 @@ document.getElementById('form-edit-song').addEventListener('submit', async e => 
       audioVariantsToYaml('audio_basse',   editAudioData.b),
       audioVariantsToYaml('audio_tutti',   editAudioData.tutti),
       '---', bodyContent || ''].filter(l => l !== null).join('\n');
-    await ghPut(path, b64encode(md), `modif chant: ${title}`, sha);
+    const putResult = await ghPut(path, b64encode(md), `modif chant: ${title}`, sha);
+    if (!putResult?.content && !putResult?.commit) {
+      setStatus('edit-status', 'error', 'Erreur de sauvegarde (conflit SHA ?). Fermez et réessayez.');
+      return;
+    }
     setStatus('edit-status', 'ok', '✓ Modifié. Mise à jour dans ~2 min.');
     setTimeout(() => { closeEditModal(); loadSongs(); triggerRebuild(); }, 1200);
   } catch(err) { setStatus('edit-status', 'error', 'Erreur : ' + err.message); }
@@ -1123,47 +1129,6 @@ document.getElementById('form-edit-song').addEventListener('submit', async e => 
 // ── Événements ────────────────────────────────────────────────
 let adminEvtsCache = [];
 
-function updateSlotPdfsArea(sel, slotRow) {
-  const pdfsArea = slotRow.querySelector('.slot-pdfs-area');
-  const pdfsList = slotRow.querySelector('.slot-pdfs-list');
-  const audioArea = slotRow.querySelector('.slot-audio-area');
-  const pdfPath = sel.value;
-  if (!pdfPath || pdfPath === '__autre__') {
-    pdfsArea.classList.add('hidden');
-    if (audioArea) audioArea.classList.add('hidden');
-    return;
-  }
-  const song = adminSongsCache.find(s => s.pdf === pdfPath || (s.pdfs && s.pdfs.some(p => p.url === pdfPath)));
-  if (!song) {
-    pdfsArea.classList.add('hidden');
-    if (audioArea) audioArea.classList.add('hidden');
-    return;
-  }
-  const pdfs = song.pdfs && song.pdfs.length > 1 ? song.pdfs : (song.pdf ? [{ label: '', url: song.pdf }] : []);
-  const canDelete = pdfs.length > 1;
-  pdfsList.innerHTML = pdfs.map(p =>
-    `<span class="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
-      ${p.label ? `<span class="font-medium">${p.label}</span> — ` : ''}<span class="text-blue-500">${p.url.split('/').pop()}</span>
-      ${canDelete ? `<button type="button" class="btn-delete-pdf ml-0.5 font-bold leading-none text-blue-400 hover:text-red-600 transition-colors" data-song-path="${song.path}" data-pdf-url="${p.url}" title="Supprimer">×</button>` : ''}
-    </span>`).join('');
-  pdfsArea.classList.remove('hidden');
-  if (audioArea) {
-    const AF = {s:'audio_soprano', a:'audio_alto', t:'audio_tenor', b:'audio_basse'};
-    ['s','a','t','b'].forEach(v => {
-      const ui = audioArea.querySelector(`.slot-audio-url[data-voice="${v}"]`);
-      const variants = song[AF[v]] || [];
-      if (ui) ui.value = variants.length > 0 ? variants[0].url : '';
-      const fi = audioArea.querySelector(`.slot-audio-file[data-voice="${v}"]`);
-      if (fi) fi.value = '';
-    });
-    audioArea.dataset.songPath = song.path;
-    audioArea.dataset.songSlug = song.path.split('/').pop().replace('.md', '');
-    audioArea.dataset.songTitle = song.title;
-    const st = audioArea.querySelector('.slot-audio-status');
-    if (st) { st.textContent = ''; st.className = 'slot-audio-status text-xs text-stone-500'; }
-    audioArea.classList.remove('hidden');
-  }
-}
 
 function askTitle(label, defaultVal = '') {
   return new Promise(resolve => {
@@ -1192,19 +1157,16 @@ function askTitle(label, defaultVal = '') {
 }
 
 function buildProgramSlots(container, currentProgram, type) {
-  const VNAMES = {s:'Soprano', a:'Alto', t:'Ténor', b:'Basse'};
-  const VOICE_INPUTS_HTML = ['s','a','t','b'].map(v => `
-    <div>
-      <label class="mb-0.5 block text-xs font-medium text-red-600">${VNAMES[v]}</label>
-      <input type="url" class="slot-audio-url w-full rounded border border-red-200 bg-white px-2 py-1 text-xs text-stone-700 placeholder:text-stone-300 focus:border-red-400 focus:outline-none" placeholder="URL YouTube ou audio" data-voice="${v}" />
-      <input type="file" accept=".mp3,audio/*" class="slot-audio-file mt-0.5 w-full text-xs text-stone-500 file:mr-1 file:cursor-pointer file:rounded file:border-0 file:bg-red-100 file:px-1.5 file:py-0.5 file:text-xs file:font-medium file:text-red-700" data-voice="${v}" />
-    </div>`).join('');
   const slots = slotsForType(type || 'messe');
   container.innerHTML = slots.map(slot => {
     const isEnPlus = slot.key === 'en_plus' || slot.key === 'en_plus_2' || slot.key === 'en_plus_3';
     const songs = adminSongsCache.filter(s => (isEnPlus || s.occasions.includes(slot.occasion)) && s.pdf).sort((a, b) => a.title.localeCompare(b.title, 'fr'));
     const cur = (currentProgram || {})[slot.key] || '';
-    const opts = songs.map(s => `<option value="${s.pdf}"${s.pdf === cur ? ' selected' : ''}>${s.title}</option>`).join('');
+    const curSongInList = cur ? songs.some(s => s.pdf === cur) : true;
+    const curSongFallback = (!curSongInList && cur) ? adminSongsCache.find(s => s.pdf === cur) : null;
+    const opts = (curSongFallback ? `<option value="${curSongFallback.pdf}" selected>${curSongFallback.title} ⚠</option>` : '')
+      + songs.map(s => `<option value="${s.pdf}"${s.pdf === cur ? ' selected' : ''}>${s.title}</option>`).join('');
+    const hasCur = !!cur;
     return `<div class="slot-row space-y-1">
       <div class="flex flex-wrap items-center gap-2">
         <span class="w-full text-xs font-medium text-stone-600 sm:w-36 sm:flex-shrink-0">${slot.label}</span>
@@ -1212,88 +1174,21 @@ function buildProgramSlots(container, currentProgram, type) {
           <option value="">-- Aucun --</option>${opts}
           <option value="__autre__">⊕ Chercher un autre chant…</option>
         </select>
-        <label class="flex-shrink-0 cursor-pointer rounded border border-stone-300 px-2 py-1 text-xs text-stone-500 hover:border-blue-600 hover:text-blue-700 transition-colors">
-          Importer
-          <input type="file" accept=".pdf" class="slot-file hidden" data-slot="${slot.key}" data-occasion="${slot.occasion}" data-label="${slot.label}" />
-        </label>
+        <button type="button" class="slot-btn-edit flex-shrink-0 rounded border px-2 py-1 text-xs transition-colors ${hasCur ? 'border-blue-300 text-blue-600 hover:border-blue-600 hover:text-blue-800' : 'border-stone-200 text-stone-300 cursor-not-allowed'}" data-slot="${slot.key}" ${hasCur ? '' : 'disabled'}>Modifier</button>
         <button type="button" class="slot-btn-new flex-shrink-0 rounded border border-stone-300 px-2 py-1 text-xs text-stone-500 hover:border-green-600 hover:text-green-700 transition-colors" data-slot="${slot.key}" data-occasion="${slot.occasion}" data-label="${slot.label}" title="Créer un nouveau chant">+</button>
         <span class="slot-status w-4 flex-shrink-0 text-xs text-stone-400" data-slot="${slot.key}"></span>
-      </div>
-      <div class="slot-pdfs-area ml-0 hidden sm:ml-36">
-        <div class="slot-pdfs-list mb-1.5 flex flex-wrap gap-1"></div>
-        <div class="flex flex-wrap items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-2 py-1.5">
-          <input type="text" class="slot-add-pdf-type w-28 flex-shrink-0 rounded border border-blue-200 bg-white px-2 py-1 text-xs placeholder:text-stone-300 focus:border-blue-500 focus:outline-none" placeholder="Guitare, 4 voix…" />
-          <label class="flex-shrink-0 cursor-pointer rounded border border-blue-300 bg-white px-2 py-1 text-xs text-blue-600 hover:bg-blue-100 transition-colors">
-            Importer
-            <input type="file" accept=".pdf" class="slot-add-pdf hidden" data-slot="${slot.key}" />
-          </label>
-          <button type="button" class="btn-add-pdf-validate flex-shrink-0 rounded bg-blue-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-blue-700 transition-colors">Valider</button>
-          <span class="slot-add-pdf-status flex-shrink-0 text-xs text-stone-500"></span>
-        </div>
-      </div>
-      <div class="slot-audio-area ml-0 mt-1.5 hidden sm:ml-36">
-        <div class="rounded-lg border border-red-200 bg-red-50 p-2">
-          <p class="mb-1.5 text-xs font-semibold text-red-700">Pistes audio</p>
-          <div class="grid grid-cols-2 gap-x-3 gap-y-1.5">${VOICE_INPUTS_HTML}</div>
-          <div class="mt-1.5 flex items-center justify-between gap-2">
-            <span class="slot-audio-status text-xs text-stone-500"></span>
-            <button type="button" class="btn-save-slot-audio rounded bg-red-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-red-700 transition-colors">Sauvegarder les voix</button>
-          </div>
-        </div>
       </div>
     </div>`;
   }).join('');
 
-  container.querySelectorAll('.slot-file').forEach(input => {
-    input.addEventListener('change', async () => {
-      const file = input.files[0]; if (!file) return;
-      const title = await askTitle(`Titre du chant (${input.dataset.label})`, file.name.replace(/\.pdf$/i, ''));
-      if (!title) { input.value = ''; return; }
-      const statusEl = container.querySelector(`.slot-status[data-slot="${input.dataset.slot}"]`);
-      const normalTitle = t => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
-      const duplicate = adminSongsCache.find(s => normalTitle(s.title) === normalTitle(title));
-      if (duplicate) {
-        const alreadyHasOcc = duplicate.occasions.includes(input.dataset.occasion);
-        const msg = alreadyHasOcc
-          ? `« ${duplicate.title} » existe déjà dans le répertoire avec l'occasion « ${input.dataset.occasion} ». Utiliser ce chant existant ?`
-          : `« ${duplicate.title} » existe déjà (${duplicate.occasions.join(', ')}). Ajouter l'occasion « ${input.dataset.occasion} » et utiliser ce chant existant ?`;
-        if (confirm(msg)) {
-          statusEl.textContent = '…';
-          try {
-            if (!alreadyHasOcc) {
-              const d = await ghGet(`contents/${duplicate.path}`);
-              const md = b64decode(d.content);
-              const merged = [...new Set([...duplicate.occasions, input.dataset.occasion])];
-              const newMd = md.replace(/^occasion:\s*.+$/m, `occasion: ${formatOccasionYaml(merged)}`);
-              await ghPut(duplicate.path, b64encode(newMd), `tag: ${duplicate.title} +${input.dataset.occasion}`, d.sha);
-            }
-            const sel = container.querySelector(`.slot-select[data-slot="${input.dataset.slot}"]`);
-            const existing = sel.querySelector(`option[value="${duplicate.pdf}"]`);
-            if (existing) { existing.selected = true; }
-            else if (duplicate.pdf) { sel.appendChild(new Option(duplicate.title, duplicate.pdf, true, true)); }
-            statusEl.textContent = '✓';
-            const slotRow = input.closest('.slot-row');
-            if (slotRow) updateSlotPdfsArea(sel, slotRow);
-            loadSongs(); if (!alreadyHasOcc) triggerRebuild();
-          } catch { statusEl.textContent = '✗'; }
-          input.value = '';
-          return;
-        }
-      }
-      statusEl.textContent = '…';
-      try {
-        const pdfPath = `uploads/${slugify(title)}.pdf`;
-        await ghPut(`public/${pdfPath}`, await fileToBase64(file), `partition: ${title}`);
-        const songMd = ['---', `title: ${yamlStr(title)}`, `occasion: ${yamlStr(input.dataset.occasion)}`, `pdf: ${pdfPath}`, '---', ''].join('\n');
-        await ghPut(`src/content/songs/${slugify(title)}.md`, b64encode(songMd), `ajout chant: ${title}`);
-        const sel = container.querySelector(`.slot-select[data-slot="${input.dataset.slot}"]`);
-        const opt = new Option(title, pdfPath, true, true);
-        sel.appendChild(opt);
-        statusEl.textContent = '✓';
-        const slotRow = input.closest('.slot-row');
-        if (slotRow) updateSlotPdfsArea(sel, slotRow);
-        loadSongs(); triggerRebuild();
-      } catch { statusEl.textContent = '✗'; }
+  container.querySelectorAll('.slot-btn-edit').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const slotRow = btn.closest('.slot-row');
+      const sel = slotRow.querySelector('.slot-select');
+      const pdfPath = sel?.value;
+      if (!pdfPath || pdfPath === '__autre__') return;
+      const song = adminSongsCache.find(s => s.pdf === pdfPath || (s.pdfs && s.pdfs.some(p => p.url === pdfPath)));
+      if (song) openEditModal(song);
     });
   });
 
@@ -1311,14 +1206,13 @@ function buildProgramSlots(container, currentProgram, type) {
         statusEl.textContent = '…';
         try {
           const pdfPath = `uploads/${slugify(t)}.pdf`;
-          await ghPut(`public/${pdfPath}`, await fileToBase64(file), `partition: ${t}`);
+          await ghPutMedia(`public/${pdfPath}`, await fileToBase64(file), `partition: ${t}`);
           const songMd = ['---', `title: ${yamlStr(t)}`, `occasion: ${yamlStr(btn.dataset.occasion)}`, `pdf: ${pdfPath}`, '---', ''].join('\n');
           await ghPut(`src/content/songs/${slugify(t)}.md`, b64encode(songMd), `ajout chant: ${t}`);
           const sel = container.querySelector(`.slot-select[data-slot="${btn.dataset.slot}"]`);
           sel.appendChild(new Option(t, pdfPath, true, true));
           statusEl.textContent = '✓';
           const slotRow = sel.closest('.slot-row');
-          if (slotRow) updateSlotPdfsArea(sel, slotRow);
           loadSongs(); triggerRebuild();
         } catch { statusEl.textContent = '✗'; }
       });
@@ -1328,172 +1222,24 @@ function buildProgramSlots(container, currentProgram, type) {
 
   container.querySelectorAll('.slot-select').forEach(sel => {
     const slotRow = sel.closest('.slot-row');
+    const editBtn = slotRow?.querySelector('.slot-btn-edit');
+    function syncEditBtn() {
+      const hasVal = !!sel.value && sel.value !== '__autre__';
+      if (editBtn) {
+        editBtn.disabled = !hasVal;
+        editBtn.className = `slot-btn-edit flex-shrink-0 rounded border px-2 py-1 text-xs transition-colors ${hasVal ? 'border-blue-300 text-blue-600 hover:border-blue-600 hover:text-blue-800' : 'border-stone-200 text-stone-300 cursor-not-allowed'}`;
+      }
+    }
     sel.addEventListener('change', () => {
       if (sel.value === '__autre__') {
         sel.value = '';
         openSongPicker(sel.dataset.slot, sel.dataset.occasion, sel.dataset.label, container);
       }
-      if (slotRow) updateSlotPdfsArea(sel, slotRow);
+      syncEditBtn();
     });
-    if (sel.value && slotRow) updateSlotPdfsArea(sel, slotRow);
+    if (sel.value) syncEditBtn();
   });
 
-  container.querySelectorAll('.slot-add-pdf').forEach(input => {
-    input.addEventListener('change', () => {
-      const statusEl = input.closest('.slot-pdfs-area')?.querySelector('.slot-add-pdf-status');
-      if (statusEl) statusEl.textContent = input.files[0] ? input.files[0].name : '';
-    });
-  });
-
-  container.querySelectorAll('.btn-add-pdf-validate').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const pdfsArea = btn.closest('.slot-pdfs-area');
-      const slotRow = btn.closest('.slot-row');
-      const sel = slotRow.querySelector('.slot-select');
-      const fileInput = pdfsArea.querySelector('.slot-add-pdf');
-      const typeInput = pdfsArea.querySelector('.slot-add-pdf-type');
-      const statusEl = pdfsArea.querySelector('.slot-add-pdf-status');
-      const file = fileInput?.files[0];
-      if (!file) { if (statusEl) { statusEl.textContent = '⚠ Choisir un fichier'; setTimeout(() => { if (statusEl.textContent.startsWith('⚠')) statusEl.textContent = ''; }, 2000); } return; }
-      const pdfPath = sel.value;
-      if (!pdfPath) return;
-      const song = adminSongsCache.find(s => s.pdf === pdfPath);
-      if (!song) return;
-      const label = typeInput?.value.trim() || 'Partition';
-      if (statusEl) statusEl.textContent = '…';
-      btn.disabled = true;
-      try {
-        const uploadPath = `uploads/${slugify(song.title)}-${slugify(label)}.pdf`;
-        await ghPut(`public/${uploadPath}`, await fileToBase64(file), `partition: ${song.title} (${label})`);
-        const d = await ghGet(`contents/${song.path}`);
-        const md = b64decode(d.content);
-        const existingPdfs = song.pdfs && song.pdfs.length > 0
-          ? song.pdfs.map(p => ({ label: p.label || 'Partition', url: p.url }))
-          : [{ label: 'Partition', url: song.pdf }];
-        const updatedPdfs = [...existingPdfs, { label, url: uploadPath }];
-        const pdfsYaml = `pdfs:\n${updatedPdfs.map(p => `  - label: ${yamlStr(p.label)}\n    url: ${p.url}`).join('\n')}`;
-        const parts = md.split(/^---$/m);
-        let fm = parts.length >= 3 ? parts[1] : '\n';
-        fm = fm.replace(/^pdfs:\n(?:  .*\n)*/m, '');
-        if (fm.match(/^pdf:\s*.+$/m)) {
-          fm = fm.replace(/^(pdf:\s*.+)$/m, `$1\n${pdfsYaml}`);
-        } else {
-          fm = fm.trimEnd() + '\n' + pdfsYaml + '\n';
-        }
-        const newMd = `---${fm}---\n${parts.slice(2).join('---')}`;
-        await ghPut(song.path, b64encode(newMd), `partition: ${song.title} +${label}`, d.sha);
-        if (statusEl) statusEl.textContent = '✓';
-        if (typeInput) typeInput.value = '';
-        fileInput.value = '';
-        setTimeout(() => { if (statusEl && statusEl.textContent === '✓') statusEl.textContent = ''; }, 2000);
-        await loadSongs();
-        updateSlotPdfsArea(sel, slotRow);
-        triggerRebuild();
-      } catch(err) { if (statusEl) statusEl.textContent = '✗'; console.error(err); }
-      btn.disabled = false;
-    });
-  });
-
-  container.addEventListener('click', async (e) => {
-    const btn = e.target.closest('.btn-delete-pdf');
-    if (!btn) return;
-    const songPath = btn.dataset.songPath;
-    const pdfUrl = btn.dataset.pdfUrl;
-    if (!songPath || !pdfUrl) return;
-    const slotRow = btn.closest('.slot-row');
-    const sel = slotRow?.querySelector('.slot-select');
-    const song = adminSongsCache.find(s => s.path === songPath);
-    if (!song) return;
-    if (!await confirmDelete(pdfUrl.split('/').pop())) return;
-    btn.disabled = true;
-    try {
-      try {
-        const fd = await ghGet(`contents/public/${pdfUrl}`);
-        await ghDelete(`public/${pdfUrl}`, fd.sha, `suppr partition: ${pdfUrl.split('/').pop()}`);
-      } catch(_) {}
-      const d = await ghGet(`contents/${songPath}`);
-      const md = b64decode(d.content);
-      const remaining = (song.pdfs || []).filter(p => p.url !== pdfUrl);
-      const parts = md.split(/^---$/m);
-      let fm = parts.length >= 3 ? parts[1] : '\n';
-      fm = fm.replace(/^pdfs:\n(?:  .*\n)*/m, '');
-      if (remaining.length >= 2) {
-        const pdfsYaml = `pdfs:\n${remaining.map(p => `  - label: ${yamlStr(p.label)}\n    url: ${p.url}`).join('\n')}`;
-        fm = fm.replace(/^(pdf:\s*.+)$/m, `$1\n${pdfsYaml}`);
-      } else if (remaining.length === 1) {
-        fm = fm.replace(/^pdf:\s*.+$/m, `pdf: ${remaining[0].url}`);
-      }
-      const newMd = `---${fm}---\n${parts.slice(2).join('---')}`;
-      await ghPut(songPath, b64encode(newMd), `suppr partition: ${pdfUrl.split('/').pop()}`, d.sha);
-      await loadSongs();
-      if (sel && slotRow) updateSlotPdfsArea(sel, slotRow);
-      triggerRebuild();
-    } catch(err) { btn.disabled = false; console.error(err); }
-  });
-
-  container.querySelectorAll('.btn-save-slot-audio').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const audioArea = btn.closest('.slot-audio-area');
-      const songPath = audioArea.dataset.songPath;
-      const songSlug = audioArea.dataset.songSlug;
-      const songTitle = audioArea.dataset.songTitle;
-      const statusEl = audioArea.querySelector('.slot-audio-status');
-      if (!songPath) return;
-      btn.disabled = true;
-      statusEl.textContent = '…';
-      statusEl.className = 'slot-audio-status text-xs text-stone-500';
-      try {
-        const d = await ghGet(`contents/${songPath}`);
-        const md = b64decode(d.content);
-        const VOICES = [
-          {v:'s', field:'audio_soprano', suffix:'-soprano'},
-          {v:'a', field:'audio_alto',    suffix:'-alto'},
-          {v:'t', field:'audio_tenor',   suffix:'-tenor'},
-          {v:'b', field:'audio_basse',   suffix:'-basse'},
-        ];
-        const audioFields = {};
-        for (const {v, field, suffix} of VOICES) {
-          const urlInput = audioArea.querySelector(`.slot-audio-url[data-voice="${v}"]`);
-          const fileInput = audioArea.querySelector(`.slot-audio-file[data-voice="${v}"]`);
-          const file = fileInput?.files?.[0];
-          const url = urlInput?.value.trim() || '';
-          if (file) {
-            const ext = file.name.split('.').pop() || 'mp3';
-            const uploadPath = `uploads/${songSlug}${suffix}.${ext}`;
-            await ghPut(`public/${uploadPath}`, await fileToBase64(file), `audio ${field}: ${songTitle}`);
-            audioFields[field] = uploadPath;
-            if (urlInput) urlInput.value = uploadPath;
-          } else {
-            audioFields[field] = url;
-          }
-          if (fileInput) fileInput.value = '';
-        }
-        let newMd = md;
-        ['audio_soprano','audio_alto','audio_tenor','audio_basse','audio_tutti'].forEach(f => {
-          newMd = newMd.replace(new RegExp(`^${f}:[ \\t]+[^\\n]+\\n?`, 'm'), '');
-          newMd = newMd.replace(new RegExp(`^${f}:[ \\t]*\\n(?:[ \\t]+[^\\n]*\\n)*`, 'm'), '');
-        });
-        const newAudioLines = VOICES.filter(({field}) => audioFields[field]).map(({field}) => `${field}: ${yamlStr(audioFields[field])}`);
-        if (newAudioLines.length > 0) {
-          const idx = newMd.lastIndexOf('\n---');
-          newMd = newMd.slice(0, idx) + '\n' + newAudioLines.join('\n') + newMd.slice(idx);
-        }
-        await ghPut(songPath, b64encode(newMd), `audio voix: ${songTitle}`, d.sha);
-        const cached = adminSongsCache.find(s => s.path === songPath);
-        if (cached) VOICES.forEach(({field}) => { cached[field] = audioFields[field] ? [{label:'', url: audioFields[field]}] : []; });
-        statusEl.textContent = '✓ Sauvegardé';
-        statusEl.className = 'slot-audio-status text-xs text-green-600';
-        setTimeout(() => { statusEl.textContent = ''; statusEl.className = 'slot-audio-status text-xs text-stone-500'; }, 3000);
-        triggerRebuild();
-      } catch(err) {
-        statusEl.textContent = '✗ Erreur';
-        statusEl.className = 'slot-audio-status text-xs text-red-500';
-        console.error(err);
-      } finally {
-        btn.disabled = false;
-      }
-    });
-  });
 }
 
 // Wizard ajout événement
