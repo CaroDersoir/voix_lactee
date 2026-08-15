@@ -13,4 +13,6 @@ pdfs:
     url: uploads/psaume-de-la-creation-basse.pdf
   - label: tutti
     url: uploads/psaume-de-la-creation-tutti.pdf
+audio_soprano: uploads/psaume-de-la-creation-soprano.mp3
+audio_alto: uploads/psaume-de-la-creation-alto.mp3
 ---
