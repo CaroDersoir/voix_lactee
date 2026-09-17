@@ -334,6 +334,16 @@ const buildVoiceData = (variants: Array<{label: string, url: string}> | undefine
                         noResults.classList.toggle('hidden', visible > 0);
                     }
 
+                    const qParam = new URLSearchParams(window.location.search).get('q');
+                    if (qParam) {
+                        searchInput.value = qParam;
+                        applyFilters();
+                        requestAnimationFrame(() => {
+                            const first = document.querySelector<HTMLTableRowElement>('#songs-tbody tr:not([style*="display: none"]):not([style*="display:none"])');
+                            first?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        });
+                    }
+
                     searchInput.addEventListener('input', applyFilters);
                     filterBtns.forEach(btn => {
                         btn.addEventListener('click', () => {

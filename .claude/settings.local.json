@@ -34,7 +34,9 @@
       "Bash(node -e \"const fs = require\\('fs'\\); const pkg = JSON.parse\\(fs.readFileSync\\('node_modules/pdfjs-dist/package.json', 'utf8'\\)\\); console.log\\(JSON.stringify\\(pkg.exports, null, 2\\)\\);\")",
       "Bash(node -e \"const fs = require\\('fs'\\); const pkg = JSON.parse\\(fs.readFileSync\\('node_modules/pdfjs-dist/package.json', 'utf8'\\)\\); console.log\\('main:', pkg.main\\); console.log\\('module:', pkg.module\\); console.log\\('type:', pkg.type\\);\")",
       "Bash(Copy-Item *)",
-      "Bash(node -e \"const p = require\\('./node_modules/pdfjs-dist/package.json'\\); console.log\\(p.version\\);\")"
+      "Bash(node -e \"const p = require\\('./node_modules/pdfjs-dist/package.json'\\); console.log\\(p.version\\);\")",
+      "Bash(New-Item -ItemType Directory -Force \"C:\\\\Users\\\\Caroline\\\\Documents\\\\site_web\\\\voix_lactee\\\\src\\\\data\")",
+      "Bash(Out-Null)"
     ]
   }
 }
