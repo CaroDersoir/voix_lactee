@@ -1,7 +1,7 @@
 ---
 title: Viens Esprit Saint
 key: Re majeur
-occasion: Pentecote
+occasion: [Pentecote, "Chant à l'Esprit Saint"]
 pdf: uploads/viens-esprit-saint.pdf
 ---
 
