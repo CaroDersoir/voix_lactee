@@ -10,4 +10,5 @@ program_autre_3_pdf: uploads/glorificamus-te.pdf
 program_autre_4_pdf: uploads/la-voix-du-bien-aime.pdf
 program_autre_5_pdf: uploads/hymne-des-cherubins.pdf
 program_autre_6_pdf: uploads/viens-parmis-nous.pdf
+program_autre_7_pdf: uploads/cantique-de-simeon.pdf
 ---
