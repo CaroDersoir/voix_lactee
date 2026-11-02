@@ -6,7 +6,7 @@ const songs = defineCollection({
 	schema: z.object({
 		title: z.string(),
 		key: z.string().optional(),
-		occasion: z.union([z.string(), z.array(z.string())]).transform(v => Array.isArray(v) ? v : [v]),
+		occasion: z.union([z.string(), z.array(z.string())]).optional().transform(v => v === undefined ? [] : Array.isArray(v) ? v : [v]),
 		pdf: z.string().optional(),
 		pdfs: z.array(z.object({ label: z.string(), url: z.string() })).optional(),
 		audio_soprano: z.union([z.string().transform(url => [{label: '', url}]), z.array(z.object({label: z.string().nullable().transform(v => v ?? ''), url: z.string()}))]).optional(),
