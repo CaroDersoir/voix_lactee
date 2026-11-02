@@ -44,9 +44,9 @@ pdfs:
   - label: Partition
     url: uploads/celeste-jerusalem-tutti-v2.mp3
 audio_soprano:
-  - label: 
+  - label: Sop1
     url: uploads/celeste-jerusalem-soprano.mp3
-  - label: 
+  - label: Sop2
     url: uploads/celeste-jerusalem-soprano-v2.mp3
 audio_alto:
   - label: 
