@@ -1,6 +1,7 @@
 ---
 title: Céleste Jérusalem
 occasion: Autre
+pdf: uploads/celeste-jerusalem.pdf
 audio_soprano:
   - label: Sop1
     url: uploads/celeste-jerusalem-soprano.mp3

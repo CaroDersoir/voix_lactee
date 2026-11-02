@@ -1208,9 +1208,11 @@ document.getElementById('form-edit-song').addEventListener('submit', async e => 
       audioVariantsToYaml('audio_basse',   editAudioData.b),
       audioVariantsToYaml('audio_tutti',   editAudioData.tutti),
       '---', bodyContent || ''].filter(l => l !== null).join('\n');
-    const putResult = await ghPut(path, b64encode(md), `modif chant: ${title}`, sha);
+    let freshSha = sha;
+    try { const cur = await ghGet(`contents/${path}`); if (cur?.sha) freshSha = cur.sha; } catch(_) {}
+    const putResult = await ghPut(path, b64encode(md), `modif chant: ${title}`, freshSha);
     if (!putResult?.content && !putResult?.commit) {
-      setStatus('edit-status', 'error', 'Erreur de sauvegarde (conflit SHA ?). Fermez et réessayez.');
+      setStatus('edit-status', 'error', `Erreur GitHub : ${putResult?.message || 'inconnue'}. Réessayez.`);
       return;
     }
     setStatus('edit-status', 'ok', '✓ Modifié. Mise à jour dans ~2 min.');
