@@ -643,9 +643,11 @@ buildOccasionCheckboxes('song-occasions', []);
 
 function parsePdfsFromMd(md) {
   const result = [];
-  const re = /^  - label:\s*(.+)\n    url:\s*(.+)$/gm;
+  const blockMatch = md.match(/^pdfs:\s*\n((?:[ \t]+[^\n]*\n)*)/m);
+  if (!blockMatch) return result;
+  const re = /[ \t]+-[ \t]+label:[ \t]*([^\n]*)\n[ \t]+url:[ \t]*(.+)/g;
   let m;
-  while ((m = re.exec(md)) !== null) {
+  while ((m = re.exec(blockMatch[1])) !== null) {
     result.push({ label: m[1].trim().replace(/^"|"$/g, ''), url: m[2].trim() });
   }
   return result;
