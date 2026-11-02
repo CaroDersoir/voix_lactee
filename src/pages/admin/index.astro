@@ -853,10 +853,17 @@ async function ghPut(path, content, msg, sha)   {
 }
 async function ghDelete(path, sha, msg)         { return fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`, { method: 'DELETE', headers: GH, body: JSON.stringify({ message: msg, sha, branch: BRANCH }) }).then(r => r.ok); }
 async function fileToBase64(file)               { return new Promise(res => { const r = new FileReader(); r.onload = e => res(e.target.result.split(',')[1]); r.readAsDataURL(file); }); }
+function checkFileSize(file) {
+  const MB = 1024 * 1024;
+  if (file.size > 20 * MB) throw new Error(`Le fichier "${file.name}" est trop lourd (${(file.size / MB).toFixed(1)} Mo). Limite : 20 Mo.`);
+  if (file.size > 5 * MB) showToast(`Fichier volumineux (${(file.size / MB).toFixed(1)} Mo) — l'envoi peut prendre du temps.`, 'ok');
+}
 async function ghPutMedia(path, content, msg) {
   let sha;
   try { const e = await ghGet(`contents/${path}`); if (e?.sha) sha = e.sha; } catch(_) {}
-  return ghPut(path, content, msg, sha);
+  const r = await ghPut(path, content, msg, sha);
+  if (r?.message && !r?.content) throw new Error(`GitHub : ${r.message}`);
+  return r;
 }
 
 // Auth
@@ -909,7 +916,7 @@ async function loadRepets() {
   try {
     const d = await ghGet('contents/src/data/repets.json');
     repetsSha = d.sha;
-    const data = JSON.parse(atob(d.content.replace(/\n/g, '')));
+    const data = JSON.parse(b64decode(d.content));
     document.getElementById('repets-titre-input').value = data.titre || '';
     const container = document.getElementById('repets-chants-list');
     container.innerHTML = '';
@@ -1028,7 +1035,11 @@ async function loadSongs() {
     </div>`).join('') : '<p class="px-6 py-5 text-stone-400 italic">Aucun chant.</p>';
 
   list.querySelectorAll('.btn-mod-song').forEach(btn => {
-    btn.addEventListener('click', () => openEditModal(adminSongsCache[parseInt(btn.dataset.idx)]));
+    btn.addEventListener('click', () => {
+      const song = adminSongsCache[parseInt(btn.dataset.idx)];
+      if (song) openEditModal(song);
+      else showToast('Erreur : chant introuvable. Rechargez la page.', 'error');
+    });
   });
 
   list.querySelectorAll('.btn-del-song').forEach(btn => {
@@ -1078,6 +1089,7 @@ document.getElementById('form-add-song').addEventListener('submit', async e => {
       const labelVal = entry.querySelector('.pdf-label').value.trim();
       const file = entry.querySelector('.pdf-file')?.files?.[0];
       if (file) {
+        checkFileSize(file);
         const suffix = pdfEntries.length > 1 && labelVal ? `-${slugify(labelVal)}` : '';
         const uploadPath = `uploads/${slug}${suffix}.pdf`;
         await ghPutMedia(`public/${uploadPath}`, await fileToBase64(file), `ajout partition: ${title}${labelVal ? ' (' + labelVal + ')' : ''}`);
@@ -1169,6 +1181,7 @@ document.getElementById('form-edit-song').addEventListener('submit', async e => 
       const existingUrl = entry.dataset.existingUrl || '';
       const file = entry.querySelector('.pdf-file')?.files?.[0];
       if (file) {
+        checkFileSize(file);
         const suffix = editPdfEntries.length > 1 && labelVal ? `-${slugify(labelVal)}` : '';
         const newPath = `uploads/${slugify(title)}${suffix}.pdf`;
         await ghPutMedia(`public/${newPath}`, await fileToBase64(file), `partition: ${title}${labelVal ? ' (' + labelVal + ')' : ''}`);
@@ -1259,13 +1272,18 @@ function buildProgramSlots(container, currentProgram, type) {
   }).join('');
 
   container.querySelectorAll('.slot-btn-edit').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const slotRow = btn.closest('.slot-row');
       const sel = slotRow.querySelector('.slot-select');
       const pdfPath = sel?.value;
       if (!pdfPath || pdfPath === '__autre__') return;
       const song = adminSongsCache.find(s => s.pdf === pdfPath || (s.pdfs && s.pdfs.some(p => p.url === pdfPath)));
-      if (song) openEditModal(song);
+      if (song) { openEditModal(song); return; }
+      showToast('Rechargement du répertoire…', 'ok');
+      await loadSongs();
+      const song2 = adminSongsCache.find(s => s.pdf === pdfPath || (s.pdfs && s.pdfs.some(p => p.url === pdfPath)));
+      if (song2) openEditModal(song2);
+      else showToast('Chant introuvable dans le répertoire.', 'error');
     });
   });
 
@@ -1282,15 +1300,25 @@ function buildProgramSlots(container, currentProgram, type) {
         const statusEl = container.querySelector(`.slot-status[data-slot="${btn.dataset.slot}"]`);
         statusEl.textContent = '…';
         try {
+          checkFileSize(file);
           const pdfPath = `uploads/${slugify(t)}.pdf`;
           await ghPutMedia(`public/${pdfPath}`, await fileToBase64(file), `partition: ${t}`);
           const songMd = ['---', `title: ${yamlStr(t)}`, `occasion: ${yamlStr(btn.dataset.occasion)}`, `pdf: ${pdfPath}`, '---', ''].join('\n');
-          await ghPut(`src/content/songs/${slugify(t)}.md`, b64encode(songMd), `ajout chant: ${t}`);
+          const putResult = await ghPut(`src/content/songs/${slugify(t)}.md`, b64encode(songMd), `ajout chant: ${t}`);
           const sel = container.querySelector(`.slot-select[data-slot="${btn.dataset.slot}"]`);
           sel.appendChild(new Option(t, pdfPath, true, true));
+          sel.dispatchEvent(new Event('change'));
+          adminSongsCache = [...adminSongsCache, {
+            path: `src/content/songs/${slugify(t)}.md`,
+            sha: putResult?.content?.sha || '',
+            title: t, key: '',
+            occasions: btn.dataset.occasion ? [btn.dataset.occasion] : [],
+            pdf: pdfPath, pdfs: [],
+            audio_soprano: [], audio_alto: [], audio_tenor: [], audio_basse: [], audio_tutti: [],
+            bodyContent: ''
+          }];
+          triggerRebuild();
           statusEl.textContent = '✓';
-          const slotRow = sel.closest('.slot-row');
-          loadSongs(); triggerRebuild();
         } catch { statusEl.textContent = '✗'; }
       });
       fileInput.click();
@@ -1569,6 +1597,7 @@ function buildAutreSlots(container, entries) {
     const slotKey = `autre-${autreSlotCounter++}`;
     const allSongs = adminSongsCache.filter(s => s.pdf).sort((a, b) => a.title.localeCompare(b.title, 'fr'));
     const opts = allSongs.map(s => `<option value="${s.pdf}"${s.pdf === pdf ? ' selected' : ''}>${s.title}</option>`).join('');
+    const hasCur = !!pdf;
     const row = document.createElement('div');
     row.className = 'autre-entry flex flex-wrap items-center gap-2';
     row.innerHTML = `
@@ -1579,15 +1608,74 @@ function buildAutreSlots(container, entries) {
         <option value="">-- Aucun chant --</option>${opts}
         <option value="__autre__">⊕ Chercher un autre chant…</option>
       </select>
+      <button type="button" class="slot-btn-edit-autre flex-shrink-0 rounded border px-2 py-1 text-xs transition-colors ${hasCur ? 'border-blue-300 text-blue-600 hover:border-blue-600 hover:text-blue-800' : 'border-stone-200 text-stone-300 cursor-not-allowed'}" ${hasCur ? '' : 'disabled'}>Modifier</button>
+      <button type="button" class="slot-btn-new-autre flex-shrink-0 rounded border border-stone-300 px-2 py-1 text-xs text-stone-500 hover:border-green-600 hover:text-green-700 transition-colors" title="Créer un nouveau chant">+</button>
       <span class="slot-status w-4 flex-shrink-0 text-xs text-stone-400" data-slot="${slotKey}"></span>
       <button type="button" class="btn-remove-autre flex-shrink-0 px-1 text-lg leading-none text-stone-300 hover:text-red-500 transition-colors">×</button>`;
-    row.querySelector('.slot-select').addEventListener('change', e => {
+
+    const sel = row.querySelector('.slot-select');
+    const editBtn = row.querySelector('.slot-btn-edit-autre');
+
+    function syncEditBtn() {
+      const hasVal = !!sel.value && sel.value !== '__autre__';
+      editBtn.disabled = !hasVal;
+      editBtn.className = `slot-btn-edit-autre flex-shrink-0 rounded border px-2 py-1 text-xs transition-colors ${hasVal ? 'border-blue-300 text-blue-600 hover:border-blue-600 hover:text-blue-800' : 'border-stone-200 text-stone-300 cursor-not-allowed'}`;
+    }
+
+    sel.addEventListener('change', e => {
       if (e.target.value === '__autre__') {
         e.target.value = '';
         const lbl = row.querySelector('.autre-label').value.trim() || 'chant';
         openSongPicker(slotKey, '', lbl, container);
       }
+      syncEditBtn();
     });
+
+    editBtn.addEventListener('click', async () => {
+      const pdfPath = sel.value;
+      if (!pdfPath || pdfPath === '__autre__') return;
+      const song = adminSongsCache.find(s => s.pdf === pdfPath || (s.pdfs && s.pdfs.some(p => p.url === pdfPath)));
+      if (song) { openEditModal(song); return; }
+      showToast('Rechargement du répertoire…', 'ok');
+      await loadSongs();
+      const song2 = adminSongsCache.find(s => s.pdf === pdfPath || (s.pdfs && s.pdfs.some(p => p.url === pdfPath)));
+      if (song2) openEditModal(song2);
+      else showToast('Chant introuvable dans le répertoire.', 'error');
+    });
+
+    row.querySelector('.slot-btn-new-autre').addEventListener('click', async () => {
+      const t = await askTitle('Titre du nouveau chant');
+      if (!t) return;
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.accept = '.pdf';
+      fileInput.addEventListener('change', async () => {
+        const file = fileInput.files[0]; if (!file) return;
+        const statusEl = row.querySelector(`.slot-status[data-slot="${slotKey}"]`);
+        statusEl.textContent = '…';
+        try {
+          checkFileSize(file);
+          const pdfPath = `uploads/${slugify(t)}.pdf`;
+          await ghPutMedia(`public/${pdfPath}`, await fileToBase64(file), `partition: ${t}`);
+          const songMd = ['---', `title: ${yamlStr(t)}`, `pdf: ${pdfPath}`, '---', ''].join('\n');
+          const putResult = await ghPut(`src/content/songs/${slugify(t)}.md`, b64encode(songMd), `ajout chant: ${t}`);
+          sel.appendChild(new Option(t, pdfPath, true, true));
+          sel.dispatchEvent(new Event('change'));
+          adminSongsCache = [...adminSongsCache, {
+            path: `src/content/songs/${slugify(t)}.md`,
+            sha: putResult?.content?.sha || '',
+            title: t, key: '', occasions: [],
+            pdf: pdfPath, pdfs: [],
+            audio_soprano: [], audio_alto: [], audio_tenor: [], audio_basse: [], audio_tutti: [],
+            bodyContent: ''
+          }];
+          triggerRebuild();
+          statusEl.textContent = '✓';
+        } catch { statusEl.textContent = '✗'; }
+      });
+      fileInput.click();
+    });
+
     row.querySelector('.btn-remove-autre').addEventListener('click', () => row.remove());
     entriesEl.appendChild(row);
   }

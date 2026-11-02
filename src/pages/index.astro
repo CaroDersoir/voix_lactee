@@ -50,9 +50,9 @@ import logo from '../assets/logo_voix_lactee_wbg.png';
     <section class="rounded-xl border border-stone-200 bg-white p-6 shadow-sm mt-6">
         <h2 class="text-xl font-semibold text-blue-950 mb-1">Proposer un chant</h2>
         <p class="text-sm text-stone-500 mb-4">Une idée de chant pour la chorale ? Laissez-nous un message.</p>
-        <form name="proposition-chant" method="POST" data-netlify="true" netlify-honeypot="bot-field" class="space-y-3" id="form-proposition">
-            <input type="hidden" name="form-name" value="proposition-chant" />
-            <p class="hidden"><label>Ne pas remplir : <input name="bot-field" /></label></p>
+        <form class="space-y-3" id="form-proposition">
+            <input type="hidden" name="access_key" value="38a0daac-3613-44ed-9a23-25e3196d0608" />
+            <input type="hidden" name="subject" value="Proposition de chant — Voix Lactée" />
             <textarea
                 name="proposition"
                 rows="3"
@@ -99,7 +99,7 @@ import logo from '../assets/logo_voix_lactee_wbg.png';
     form?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const data = new FormData(form);
-        await fetch('/', { method: 'POST', body: data });
+        await fetch('https://api.web3forms.com/submit', { method: 'POST', body: data });
         form.style.display = 'none';
         document.getElementById('form-merci')?.classList.remove('hidden');
     });

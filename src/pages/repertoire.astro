@@ -13,7 +13,7 @@ const audioUrl = (path: string | undefined) => {
 };
 const isExternalAudio = (url: string) => url.startsWith('http://') || url.startsWith('https://');
 const buildVoiceData = (variants: Array<{label: string, url: string}> | undefined, fallbackLabel: string) =>
-    (variants ?? []).map(v => ({ label: v.label || fallbackLabel, url: audioUrl(v.url) }));
+    (variants ?? []).map(v => ({ label: v.label || fallbackLabel, url: audioUrl(v.url), isCustom: !!v.label }));
 ---
 
 <Layout title="Répertoire | Voix Lactée">
@@ -62,7 +62,7 @@ const buildVoiceData = (variants: Array<{label: string, url: string}> | undefine
             {songs.map((song) => {
                 const combinedS = [
                     ...buildVoiceData(song.data.audio_soprano, 'Soprano'),
-                    ...buildVoiceData(song.data.audio_tutti, 'Tutti'),
+                    ...buildVoiceData(song.data.audio_tutti, 'Tutti').map(v => ({ ...v, isCustom: true })),
                 ];
                 const combinedA = buildVoiceData(song.data.audio_alto, 'Alto');
                 const combinedT = buildVoiceData(song.data.audio_tenor, 'Ténor');
@@ -202,6 +202,43 @@ const buildVoiceData = (variants: Array<{label: string, url: string}> | undefine
                 <!-- Sélecteur audio (multi-audio) -->
                 <div id="audio-picker" class="fixed z-[70] rounded-lg border border-stone-200 bg-white py-1 shadow-lg" style="display:none; min-width:10rem;"></div>
 
+                <!-- Lecteur audio MP3 -->
+                <div id="audio-modal" class="fixed inset-0 z-[80] flex items-end justify-center bg-black/60 sm:items-center" style="display:none;">
+                    <div class="w-full max-w-sm rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl">
+                        <div class="flex items-start justify-between px-5 pt-5 pb-3">
+                            <div class="min-w-0 pr-3">
+                                <p id="am-voice" class="text-xs font-medium uppercase tracking-wide text-stone-400"></p>
+                                <p id="am-title" class="text-sm font-semibold text-stone-900"></p>
+                            </div>
+                            <button id="am-close" class="flex-shrink-0 rounded-full p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700" aria-label="Fermer">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="px-5 pb-2">
+                            <input id="am-seek" type="range" min="0" max="100" value="0" step="0.1"
+                                   class="w-full cursor-pointer accent-blue-700"/>
+                            <div class="mt-1 flex justify-between text-xs text-stone-400">
+                                <span id="am-current">0:00</span>
+                                <span id="am-duration">–:––</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-center gap-8 px-5 pb-6">
+                            <button id="am-back15" class="h-12 w-12 rounded-full bg-stone-100 text-xs font-bold text-stone-600 hover:bg-stone-200" title="Reculer 15 secondes">−15s</button>
+                            <button id="am-play-pause" class="flex h-14 w-14 items-center justify-center rounded-full bg-blue-900 text-white shadow-md hover:bg-blue-700">
+                                <svg id="am-play-icon" xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
+                                </svg>
+                                <svg id="am-pause-icon" xmlns="http://www.w3.org/2000/svg" class="hidden h-7 w-7" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                </svg>
+                            </button>
+                            <button id="am-fwd15" class="h-12 w-12 rounded-full bg-stone-100 text-xs font-bold text-stone-600 hover:bg-stone-200" title="Avancer 15 secondes">+15s</button>
+                        </div>
+                    </div>
+                </div>
+
 </Layout>
 
                 <script>
@@ -242,26 +279,6 @@ const buildVoiceData = (variants: Array<{label: string, url: string}> | undefine
                         if (e.target === ytOverlay) history.back();
                     });
 
-                    // ── Audio ──────────────────────────────────────────────────
-                    const audioPlayer = new Audio();
-                    let currentBtn: HTMLButtonElement | null = null;
-
-                    function setPlaying(btn: HTMLButtonElement, playing: boolean) {
-                        btn.querySelector('.play-icon')!.classList.toggle('hidden', playing);
-                        btn.querySelector('.pause-icon')!.classList.toggle('hidden', !playing);
-                        btn.classList.toggle('bg-blue-700', playing);
-                        btn.classList.toggle('text-white', playing);
-                        btn.classList.toggle('bg-blue-50', !playing);
-                        btn.classList.toggle('text-blue-700', !playing);
-                    }
-
-                    audioPlayer.addEventListener('ended', () => {
-                        if (currentBtn) {
-                            setPlaying(currentBtn, false);
-                            currentBtn = null;
-                        }
-                    });
-
                     // ── Délégation d'événements ────────────────────────────────
                     document.getElementById('songs-tbody')!.addEventListener('click', (e) => {
                         const target = e.target as HTMLElement;
@@ -276,31 +293,16 @@ const buildVoiceData = (variants: Array<{label: string, url: string}> | undefine
                             if (!variants.length) return;
                             if (variants.length > 1) {
                                 e.stopPropagation();
-                                if (currentBtn === audioBtn && !audioPlayer.paused) {
-                                    audioPlayer.pause();
-                                    setPlaying(audioBtn, false);
-                                    currentBtn = null;
-                                } else {
-                                    showAudioPicker(audioBtn, variants);
-                                }
+                                showAudioPicker(audioBtn, variants);
                                 return;
                             }
-                            const url = variants[0].url;
-                            if (url.startsWith('http://') || url.startsWith('https://')) {
-                                openYouTubeOverlay(url);
+                            const v0 = variants[0];
+                            if (v0.url.startsWith('http://') || v0.url.startsWith('https://')) {
+                                openYouTubeOverlay(v0.url);
                                 return;
                             }
-                            if (currentBtn === audioBtn && !audioPlayer.paused) {
-                                audioPlayer.pause();
-                                setPlaying(audioBtn, false);
-                                currentBtn = null;
-                            } else {
-                                if (currentBtn) setPlaying(currentBtn, false);
-                                audioPlayer.src = url;
-                                audioPlayer.play();
-                                setPlaying(audioBtn, true);
-                                currentBtn = audioBtn;
-                            }
+                            const VNAMES: Record<string, string> = {s:'Soprano', a:'Alto', t:'Ténor', b:'Basse'};
+                            openAudioModal(v0.url, row.dataset.songTitle || '', VNAMES[voice] ?? voice.toUpperCase(), v0.isCustom ? v0.label : undefined);
                             return;
                         }
 
@@ -389,10 +391,10 @@ const buildVoiceData = (variants: Array<{label: string, url: string}> | undefine
                     const audioPicker = document.getElementById('audio-picker') as HTMLElement;
                     let currentAudioPickerBtn: HTMLButtonElement | null = null;
 
-                    function showAudioPicker(btn: HTMLButtonElement, variants: Array<{label: string, url: string}>) {
+                    function showAudioPicker(btn: HTMLButtonElement, variants: Array<{label: string, url: string, isCustom: boolean}>) {
                         currentAudioPickerBtn = btn;
                         audioPicker.innerHTML = variants.map(v =>
-                            `<button class="audio-picker-item block w-full truncate rounded px-3 py-1.5 text-left text-sm text-stone-700 hover:bg-blue-50 hover:text-blue-800" data-url="${v.url}" data-is-external="${v.url.startsWith('http://') || v.url.startsWith('https://')}">${v.label}</button>`
+                            `<button class="audio-picker-item block w-full truncate rounded px-3 py-1.5 text-left text-sm text-stone-700 hover:bg-blue-50 hover:text-blue-800" data-url="${v.url}" data-is-external="${v.url.startsWith('http://') || v.url.startsWith('https://')}" data-label="${v.label}" data-is-custom="${v.isCustom}">${v.label}</button>`
                         ).join('');
                         const rect = btn.getBoundingClientRect();
                         audioPicker.style.top = `${rect.bottom + 4}px`;
@@ -410,13 +412,12 @@ const buildVoiceData = (variants: Array<{label: string, url: string}> | undefine
                                 return;
                             }
                             const btn = currentAudioPickerBtn;
-                            if (btn) {
-                                if (currentBtn) setPlaying(currentBtn, false);
-                                audioPlayer.src = url;
-                                audioPlayer.play();
-                                setPlaying(btn, true);
-                                currentBtn = btn;
-                            }
+                            const VNAMES: Record<string, string> = {s:'Soprano', a:'Alto', t:'Ténor', b:'Basse'};
+                            const voice = btn?.dataset.voice ?? '';
+                            const songTitle = btn?.closest('tr')?.dataset.songTitle || '';
+                            const isCustom = item.dataset.isCustom === 'true';
+                            const itemLabel = item.dataset.label || '';
+                            openAudioModal(url, songTitle, VNAMES[voice] ?? '', isCustom ? itemLabel : undefined);
                         }
                     });
 
@@ -570,5 +571,114 @@ const buildVoiceData = (variants: Array<{label: string, url: string}> | undefine
                             closeYouTubeOverlay();
                         }
                     });
+
+                    // ── Lecteur audio MP3 modal ────────────────────────────────
+                    const audioModal = document.getElementById('audio-modal') as HTMLElement;
+                    const amTitleEl  = document.getElementById('am-title')    as HTMLElement;
+                    const amVoiceEl  = document.getElementById('am-voice')    as HTMLElement;
+                    const amSeek     = document.getElementById('am-seek')     as HTMLInputElement;
+                    const amCurrentEl  = document.getElementById('am-current')  as HTMLElement;
+                    const amDurationEl = document.getElementById('am-duration') as HTMLElement;
+                    const amPlayIcon  = document.getElementById('am-play-icon')  as HTMLElement;
+                    const amPauseIcon = document.getElementById('am-pause-icon') as HTMLElement;
+                    const amAudio = new Audio();
+                    const amPositions = new Map<string, number>();
+                    let amCurrentUrl = '';
+                    let amSeeking = false;
+
+                    function fmtTime(s: number): string {
+                        if (!isFinite(s) || isNaN(s)) return '–:––';
+                        const m = Math.floor(s / 60);
+                        const ss = Math.floor(s % 60);
+                        return `${m}:${ss.toString().padStart(2, '0')}`;
+                    }
+
+                    function amSetPlaying(playing: boolean) {
+                        amPlayIcon.classList.toggle('hidden', playing);
+                        amPauseIcon.classList.toggle('hidden', !playing);
+                    }
+
+                    function openAudioModal(url: string, title: string, voice: string, customLabel?: string) {
+                        if (customLabel) {
+                            amTitleEl.textContent = customLabel;
+                            amVoiceEl.textContent = '';
+                        } else {
+                            amTitleEl.textContent = title;
+                            amVoiceEl.textContent = voice;
+                        }
+                        if (amCurrentUrl !== url) {
+                            if (amCurrentUrl && amAudio.currentTime > 0 && !amAudio.ended) {
+                                amPositions.set(amCurrentUrl, amAudio.currentTime);
+                            }
+                            amCurrentUrl = url;
+                            amAudio.src = url;
+                            amSeek.value = '0';
+                            amCurrentEl.textContent = '0:00';
+                            amDurationEl.textContent = '–:––';
+                        }
+                        amAudio.play();
+                        amSetPlaying(true);
+                        audioModal.style.display = 'flex';
+                        document.body.style.overflow = 'hidden';
+                    }
+
+                    amAudio.addEventListener('loadedmetadata', () => {
+                        amDurationEl.textContent = fmtTime(amAudio.duration);
+                        const saved = amPositions.get(amCurrentUrl);
+                        if (saved && saved > 0 && saved < amAudio.duration - 1) {
+                            amAudio.currentTime = saved;
+                        }
+                    });
+
+                    amAudio.addEventListener('timeupdate', () => {
+                        if (amSeeking) return;
+                        const pct = amAudio.duration ? (amAudio.currentTime / amAudio.duration) * 100 : 0;
+                        amSeek.value = String(pct);
+                        amCurrentEl.textContent = fmtTime(amAudio.currentTime);
+                    });
+
+                    amAudio.addEventListener('ended', () => {
+                        amSetPlaying(false);
+                        amPositions.delete(amCurrentUrl);
+                    });
+
+                    amSeek.addEventListener('pointerdown', () => { amSeeking = true; });
+                    amSeek.addEventListener('input', () => {
+                        amCurrentEl.textContent = fmtTime((parseFloat(amSeek.value) / 100) * (amAudio.duration || 0));
+                    });
+                    amSeek.addEventListener('change', () => {
+                        amAudio.currentTime = (parseFloat(amSeek.value) / 100) * amAudio.duration;
+                        amSeeking = false;
+                    });
+
+                    document.getElementById('am-play-pause')!.addEventListener('click', () => {
+                        if (amAudio.paused) {
+                            amAudio.play();
+                            amSetPlaying(true);
+                        } else {
+                            amPositions.set(amCurrentUrl, amAudio.currentTime);
+                            amAudio.pause();
+                            amSetPlaying(false);
+                        }
+                    });
+
+                    document.getElementById('am-back15')!.addEventListener('click', () => {
+                        amAudio.currentTime = Math.max(0, amAudio.currentTime - 15);
+                    });
+
+                    document.getElementById('am-fwd15')!.addEventListener('click', () => {
+                        amAudio.currentTime = Math.min(amAudio.duration || 0, amAudio.currentTime + 15);
+                    });
+
+                    function closeAudioModal() {
+                        amPositions.set(amCurrentUrl, amAudio.currentTime);
+                        amAudio.pause();
+                        amSetPlaying(false);
+                        audioModal.style.display = 'none';
+                        document.body.style.overflow = '';
+                    }
+
+                    document.getElementById('am-close')!.addEventListener('click', closeAudioModal);
+                    audioModal.addEventListener('click', (e) => { if (e.target === audioModal) closeAudioModal(); });
 
                     </script>
