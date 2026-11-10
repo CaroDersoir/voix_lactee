@@ -1615,6 +1615,7 @@ function buildAutreSlots(container, entries) {
       <button type="button" class="slot-btn-edit-autre flex-shrink-0 rounded border px-2 py-1 text-xs transition-colors ${hasCur ? 'border-blue-300 text-blue-600 hover:border-blue-600 hover:text-blue-800' : 'border-stone-200 text-stone-300 cursor-not-allowed'}" ${hasCur ? '' : 'disabled'}>Modifier</button>
       <button type="button" class="slot-btn-new-autre flex-shrink-0 rounded border border-stone-300 px-2 py-1 text-xs text-stone-500 hover:border-green-600 hover:text-green-700 transition-colors" title="Créer un nouveau chant">+</button>
       <span class="slot-status w-4 flex-shrink-0 text-xs text-stone-400" data-slot="${slotKey}"></span>
+      <span class="drag-handle flex-shrink-0 cursor-grab px-1 text-base text-stone-300 hover:text-stone-500 transition-colors select-none" title="Glisser pour réordonner">⠿</span>
       <button type="button" class="btn-remove-autre flex-shrink-0 px-1 text-lg leading-none text-stone-300 hover:text-red-500 transition-colors">×</button>`;
 
     const sel = row.querySelector('.slot-select');
@@ -1680,6 +1681,37 @@ function buildAutreSlots(container, entries) {
       fileInput.click();
     });
 
+    const handle = row.querySelector('.drag-handle');
+    handle.addEventListener('mousedown', () => { row.draggable = true; });
+    handle.addEventListener('mouseup',   () => { row.draggable = false; });
+    row.addEventListener('dragstart', e => {
+      e.dataTransfer.effectAllowed = 'move';
+      row.classList.add('opacity-40');
+      entriesEl._dragging = row;
+    });
+    row.addEventListener('dragend', () => {
+      row.classList.remove('opacity-40');
+      row.draggable = false;
+      entriesEl._dragging = null;
+      entriesEl.querySelectorAll('.autre-entry').forEach(r => r.classList.remove('border-t-2', 'border-blue-400'));
+    });
+    row.addEventListener('dragover', e => {
+      e.preventDefault();
+      const dragging = entriesEl._dragging;
+      if (!dragging || dragging === row) return;
+      const rect = row.getBoundingClientRect();
+      const after = e.clientY > rect.top + rect.height / 2;
+      entriesEl.querySelectorAll('.autre-entry').forEach(r => r.classList.remove('border-t-2', 'border-blue-400'));
+      if (!after) row.classList.add('border-t-2', 'border-blue-400');
+    });
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      const dragging = entriesEl._dragging;
+      if (!dragging || dragging === row) return;
+      const rect = row.getBoundingClientRect();
+      const after = e.clientY > rect.top + rect.height / 2;
+      if (after) row.after(dragging); else row.before(dragging);
+    });
     row.querySelector('.btn-remove-autre').addEventListener('click', () => row.remove());
     entriesEl.appendChild(row);
   }
