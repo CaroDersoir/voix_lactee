@@ -38,7 +38,8 @@
       "Bash(New-Item -ItemType Directory -Force \"C:\\\\Users\\\\Caroline\\\\Documents\\\\site_web\\\\voix_lactee\\\\src\\\\data\")",
       "Bash(Out-Null)",
       "Bash(git remote *)",
-      "Bash(git rm *)"
+      "Bash(git rm *)",
+      "Bash(git fetch *)"
     ]
   }
 }
