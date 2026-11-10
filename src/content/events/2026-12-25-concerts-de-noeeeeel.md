@@ -1,6 +1,7 @@
 ---
 title: Concerts de Nöeeeeel
-date: 2026-12-25
+date: 2027-01-31
+description: "Concerts 17, 24 et 31 janvier !\nCe seront des dimanches soirs, l'heure et les lieux sont encore à définir."
 type: autre
 chef_choeur: Annaëlle
 program_autre_0_pdf: uploads/viens-esprit-saint.pdf

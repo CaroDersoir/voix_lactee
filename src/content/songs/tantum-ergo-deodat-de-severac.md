@@ -9,6 +9,6 @@ audio_basse: "https://youtu.be/kYHhfcv3168?list=RDkYHhfcv3168"
 audio_tutti:
   - label: SATB
     url: https://www.youtube.com/watch?v=kRnAQitmEow&list=RDkRnAQitmEow&start_radio=1&pp=ygUldGFudHVtIGVyZ28gRMOpb2RhdCBkZSBTw6l2w6lyYWMgYWx0b6AHAQ%3D%3D
-  - label: sans paroles
+  - label: SATB sans paroles
     url: https://youtu.be/9e_S09KYqzk?list=RDiiApTQRVDfU
 ---
