@@ -1,6 +1,6 @@
 ---
 title: Veni Sancte Spiritus (Viens Esprit Saint)
-occasion: Autre
+occasion: "Chant à l'Esprit Saint"
 pdf: uploads/veni-sancte-spiritus-viens-esprit-saint.pdf
 audio_soprano: "https://www.youtube.com/watch?v=R9x_BIEwCJ8&list=RDR9x_BIEwCJ8&start_radio=1&pp=ygUadmVuaSBzYW5jdGUgc3Bpcml0dXMgYmFzc2WgBwE%3D"
 audio_alto: "https://youtu.be/dQJXiPPeOk4"
